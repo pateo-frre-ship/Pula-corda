@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1b2a41">
+<title>Pula Corda</title>
+<style>
+:root{--bg:#1b2a41;--fg:#f4f4f4;--card:rgba(255,255,255,.14);--ac:#ff7a3d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;touch-action:manipulation}
+.scr{position:fixed;inset:0;display:none;flex-direction:column;gap:10px;padding:max(env(safe-area-inset-top),12px) 14px max(env(safe-area-inset-bottom),12px)}
+.scr.on{display:flex}
+button{font:inherit;color:inherit;border:0;border-radius:14px;background:var(--card);padding:12px 14px;min-height:48px;cursor:pointer}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.4}
+button.pri{background:var(--ac);color:#fff;font-weight:700}
+h1{margin:0;font-size:2.2rem;text-align:center}
+h2{margin:0;font-size:1.3rem;flex:1}
+.top{display:flex;align-items:center;gap:10px}
+.top button{min-width:48px}
+.chip{background:var(--card);border-radius:20px;padding:6px 14px;font-weight:700}
+.col{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px}
+.card .t{flex:1;min-width:0}
+.card small{display:block;opacity:.8;margin-top:2px}
+.card button{flex:0 0 auto;min-width:92px}
+.bar{height:6px;border-radius:3px;background:var(--card);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac)}
+#menu{justify-content:center;align-items:stretch;gap:14px}
+#menu .row{display:flex;gap:8px;justify-content:center}
+#menu .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#play{font-size:1.5rem;padding:18px}
+#game{padding:0;gap:0}
+#hud{display:flex;justify-content:space-between;align-items:center;padding:max(env(safe-area-inset-top),8px) 14px 4px;font-weight:700}
+#hs{font-size:2.6rem;line-height:1}
+#cw{position:relative;flex:1;min-height:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#msg{position:absolute;inset:0;display:flex;justify-content:center;padding:10% 20px 0;font-size:1.2rem;font-weight:700;text-align:center;pointer-events:none}
+#over{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.55);color:#fff;text-align:center}
+#over button{width:220px}
+#ovScore{font-size:4rem;font-weight:800;line-height:1}
+#abs{display:flex;gap:8px;padding:8px 12px max(env(safe-area-inset-bottom),10px)}
+#abs button{flex:1;min-height:60px;padding:6px;line-height:1.25}
+#abs button small{display:block;opacity:.85;font-size:.75rem}
+#abs button.rdy{background:var(--ac);color:#fff}
+#abs button.act{outline:3px solid var(--ac)}
+#abs #bQuit{flex:0 0 54px}
+.sw{display:flex;flex-wrap:wrap;gap:10px}
+.sk button{border-radius:10px;overflow:hidden}.sk img{width:100%;height:100%;display:block;object-fit:contain;image-rendering:pixelated}
+.sw button{width:44px;min-width:44px;height:44px;min-height:44px;border-radius:50%;padding:0;border:3px solid var(--card)}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:9}
+#modal div{background:#fff;color:#1a1a2e;border-radius:18px;padding:18px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:12px}
+#modal .r{display:flex;gap:8px}
+#modal .r button{flex:1;background:#e6e6ee;color:#1a1a2e}
+#modal .r button.pri{background:var(--ac);color:#fff}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:10;max-width:90%;text-align:center}
+@media (max-height:520px){h1{font-size:1.6rem}#play{padding:10px}#hs{font-size:2rem}}
+</style>
+</head>
+<body>
+
+<section id="menu" class="scr on">
+  <h1>🪢 Pula Corda</h1>
+  <div class="row"><span class="chip" id="mCoins"></span><span class="chip" id="mBest"></span></div>
+  <button class="pri" id="play" data-go="game">▶ Jogar</button>
+  <div class="grid">
+    <button data-go="shop">🛒<br>Loja</button>
+    <button data-go="chal">🎯<br>Desafios</button>
+    <button data-go="set">⚙️<br>Config.</button>
+  </div>
+</section>
+
+<section id="game" class="scr">
+  <div id="hud"><span id="hc"></span><b id="hs">0</b><span id="hr"></span></div>
+  <div id="cw">
+    <canvas id="cv"></canvas>
+    <div id="msg"></div>
+    <div id="over">
+      <h2 id="ovTitle" style="flex:none">Errou!</h2>
+      <div id="ovScore">0</div>
+      <div id="ovInfo"></div>
+      <button class="pri" id="again">Jogar de novo</button>
+      <button data-go="menu">Menu</button>
+    </div>
+  </div>
+  <div id="abs">
+    <button id="bSlow"></button>
+    <button id="bAuto"></button>
+    <button id="bQuit" aria-label="Sair">✕</button>
+  </div>
+</section>
+
+<section id="shop" class="scr">
+  <div class="top"><button data-go="menu">←</button><h2>Loja</h2><span class="chip" id="shopCoins"></span></div>
+  <div class="col" id="shopList"></div>
+</section>
+
+<section id="chal" class="scr">
+  <div class="top"><button data-go="menu">←</button><h2>Desafios</h2><span class="chip" id="chalCoins"></span></div>
+  <div class="col" id="chalList"></div>
+</section>
+
+<section id="set" class="scr">
+  <div class="top"><button data-go="menu">←</button><h2>Configurações</h2></div>
+  <div class="col">
+    <div class="card"><div class="t">Sons</div><button id="sndBtn"></button></div>
+    <div class="card" style="flex-direction:column;align-items:stretch">
+      <div>Cor do fundo</div>
+      <div class="sw" id="swatches"></div>
+      <label>Outra cor: <input type="color" id="bgIn"></label>
+    </div>
+    <div class="card" style="flex-direction:column;align-items:stretch">
+      <div>Skin do personagem</div>
+      <div class="sw sk" id="skinList"></div>
+      <button id="skinAdd">🖼️ Adicionar skin (imagem)</button>
+      <button id="skinDel" style="display:none">🗑️ Remover skin atual</button>
+      <input type="file" id="skinIn" accept="image/*" hidden>
+    </div>
+  </div>
+</section>
+
+<div id="modal"><div><span id="mTxt"></span><span class="r"><button id="mNo">Cancelar</button><button class="pri" id="mYes">Confirmar</button></span></div></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ===== Configuração (ajuste aqui o equilíbrio do jogo) ===== */
+const CFG={
+  baseCoins:30, coinStep:10,          // moedas por pulo: 30 + 10 por nível
+  lvlCost:60, maxLvl:5,               // melhoria de velocidade
+  baseRps:.85, rpsStep:.1,            // voltas da corda por segundo (nível 0 → 5: .85 → 1.35)
+  slowCost:270, slowDur:30, slowCd:60, slowMult:.62,   // Slow: corda a 62% da velocidade
+  autoCost:150, autoJumps:15, autoCd:40,
+  resetFee:500,
+  jumpDur:.5,                         // duração de um pulo (s)
+  clear:.4                            // altura mínima (fração do pulo máximo) para livrar a corda
+};
+
+/* ===== Desafios: para criar novos, basta adicionar uma linha ===== */
+const CHALLENGES=[
+  {id:'r10', name:'Aquecimento',   desc:'10 pulos em uma rodada',  goal:10,   reward:50,  val:s=>s.best},
+  {id:'r20', name:'Pegando ritmo', desc:'20 pulos em uma rodada',  goal:20,   reward:100, val:s=>s.best},
+  {id:'r50', name:'Sem tropeçar',  desc:'50 pulos em uma rodada',  goal:50,   reward:200, val:s=>s.best},
+  {id:'r100',name:'Mestre da corda',desc:'100 pulos em uma rodada',goal:100,  reward:400, val:s=>s.best},
+  {id:'t500',name:'Maratona',      desc:'500 pulos no total',      goal:500,  reward:300, val:s=>s.total},
+  {id:'t2000',name:'Lenda',        desc:'2000 pulos no total',     goal:2000, reward:800, val:s=>s.total},
+  {id:'p10', name:'Persistente',   desc:'Jogar 10 rodadas',        goal:10,   reward:100, val:s=>s.rounds}
+];
+
+/* ===== Skins: o personagem é desenhado por uma skin.
+   No app Android, skins baixadas/criadas entram com registerSkin({id,name,color,draw?}) ===== */
+const SKINS={default:{id:'default',name:'Quadrado',color:'#ff7a3d',
+  draw(c,x,y,s,sk){c.fillStyle=sk.color;c.fillRect(x-s/2,y-s,s,s);
+    c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.strokeRect(x-s/2,y-s,s,s);
+    c.fillStyle='#fff';const e=s*.12;c.fillRect(x-s*.22,y-s*.68,e,e*1.6);c.fillRect(x+s*.1,y-s*.68,e,e*1.6)}}};
+function registerSkin(sk){if(sk&&sk.id)SKINS[sk.id]=sk}
+[['azul','Azul','#3b82f6'],['verde','Verde','#22c55e'],['rosa','Rosa','#ec4899'],['roxo','Roxo','#8b5cf6'],['ouro','Ouro','#facc15'],['branco','Branco','#f5f5f5']]
+  .forEach(a=>registerSkin({id:a[0],name:a[1],color:a[2]}));
+function regCustom(c){                       // skin feita de imagem (guardada no aparelho)
+  const im=new Image();im.src=c.img;
+  registerSkin({id:c.id,name:c.name,color:'#888',custom:true,img:im,pixel:!!c.pixel,
+    draw(g,x,y,s,sk){                        // mantém a proporção; pixel art fica nítida
+      const m=sk.img;
+      if(m.complete&&m.naturalWidth){
+        const k=Math.min(s/m.naturalWidth,s*1.3/m.naturalHeight),w=m.naturalWidth*k,hh=m.naturalHeight*k;
+        g.imageSmoothingEnabled=!sk.pixel;g.drawImage(m,x-w/2,y-hh,w,hh);g.imageSmoothingEnabled=true;
+      }else SKINS.default.draw(g,x,y,s,sk);
+    }});
+}
+
+/* ===== Salvamento ===== */
+const KEY='puloCorda_v1';
+const DEF={coins:0,best:0,total:0,rounds:0,lvl:0,slow:false,auto:false,done:{},sound:true,bg:'#1b2a41',skin:'default',custom:[]};
+function load(){
+  let o={};try{o=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
+  const s=Object.assign({},DEF,o);
+  s.custom=Array.isArray(o.custom)?o.custom.filter(c=>c&&typeof c.img==='string'&&c.id):[];
+  s.cd=Object.assign({slow:0,auto:0},o.cd);s.done=Object.assign({},o.done);
+  ['coins','best','total','rounds','lvl'].forEach(k=>s[k]=Math.max(0,Number(s[k])||0));
+  s.lvl=Math.min(CFG.maxLvl,s.lvl|0);
+  const n=Date.now();
+  if(s.cd.slow>n+CFG.slowCd*1000)s.cd.slow=0;
+  if(s.cd.auto>n+CFG.autoCd*1000)s.cd.auto=0;
+  return s;
+}
+let S=load();
+S.custom.forEach(regCustom);
+if(!SKINS[S.skin])S.skin='default';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ===== Utilidades ===== */
+const $=id=>document.getElementById(id);
+const PI2=Math.PI*2;
+const reward=()=>CFG.baseCoins+CFG.coinStep*S.lvl;
+const rps=()=>CFG.baseRps+CFG.rpsStep*S.lvl;
+const phase=th=>((th+Math.PI)%PI2+PI2)%PI2;
+let FG='#f4f4f4';
+function applyTheme(){
+  const h=S.bg.replace('#','');
+  const n=parseInt(h.length===3?h.replace(/./g,'$&$&'):h,16)||0;
+  const l=(.299*(n>>16&255)+.587*(n>>8&255)+.114*(n&255))/255;
+  FG=l>.6?'#1a1a2e':'#f4f4f4';
+  const r=document.documentElement.style;
+  r.setProperty('--bg',S.bg);r.setProperty('--fg',FG);
+  r.setProperty('--card',l>.6?'rgba(0,0,0,.09)':'rgba(255,255,255,.14)');
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.content=S.bg;
+}
+let toastT;
+function toast(t){const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>e.style.display='none',2200)}
+function ask(txt,yes){$('mTxt').textContent=txt;$('modal').style.display='flex';
+  $('mYes').onclick=()=>{$('modal').style.display='none';yes()};
+  $('mNo').onclick=()=>$('modal').style.display='none'}
+
+/* ===== Sons (gerados por JavaScript) ===== */
+let AC;
+function beep(f,d,type,v,t0){
+  if(!S.sound)return;
+  try{
+    AC=AC||new(window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==='suspended')AC.resume();
+    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime+(t0||0);
+    o.type=type||'square';o.frequency.value=f;
+    g.gain.setValueAtTime(v||.07,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d);
+  }catch(e){}
+}
+const sfx={
+  jump:n=>beep(520+(n%8)*45,.09,'square',.06),
+  buy:()=>{beep(520,.1,'triangle',.12);beep(780,.16,'triangle',.12,.09)},
+  fail:()=>beep(110,.35,'sawtooth',.1)
+};
+
+/* ===== Estado da partida ===== */
+const G={on:false,state:'ready',th:0,score:0,earned:0,newRec:false,air:false,jt:0,h:0,wait:0,
+  slowT:0,autoOn:false,autoLeft:0,pops:[],paused:false,overT:0,last:0,raf:0};
+let cv,ctx,W=300,H=400;
+
+function resize(){
+  const r=cv.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);
+  W=r.width||300;H=r.height||400;
+  cv.width=Math.round(W*d);cv.height=Math.round(H*d);
+  ctx.setTransform(d,0,0,d,0,0);
+}
+function setMsg(t){const m=$('msg');m.textContent=t;m.style.display=t?'flex':'none'}
+function hud(){$('hs').textContent=G.score;$('hc').textContent='🪙 '+S.coins;$('hr').textContent='🏆 '+S.best}
+
+function startRound(){
+  cancelAnimationFrame(G.raf);
+  Object.assign(G,{state:'ready',th:0,score:0,earned:0,newRec:false,air:false,jt:0,h:0,wait:0,
+    slowT:0,autoOn:false,autoLeft:0,pops:[],paused:false,overT:0,on:true});
+  $('over').style.display='none';
+  setMsg('Toque na tela para começar');
+  resize();hud();
+  G.last=performance.now();
+  G.raf=requestAnimationFrame(loop);
+}
+function endEffect(k){
+  if(k==='slow'){G.slowT=0;S.cd.slow=Date.now()+CFG.slowCd*1000}
+  else{G.autoOn=false;G.autoLeft=0;S.cd.auto=Date.now()+CFG.autoCd*1000}
+  save();
+}
+function useSlow(){
+  if(!S.slow||G.state!=='play'||G.slowT>0||Date.now()<S.cd.slow)return;
+  G.slowT=CFG.slowDur;
+}
+function useAuto(){
+  if(!S.auto||G.state!=='play'||G.autoOn||Date.now()<S.cd.auto)return;
+  G.autoOn=true;G.autoLeft=CFG.autoJumps;
+}
+function jump(){if(!G.air){G.air=true;G.jt=0}}
+function tap(){
+  if(!G.on||G.state==='over')return;
+  if(G.paused){G.paused=false;setMsg('');return}
+  if(G.state==='ready'){G.state='play';G.th=0;G.wait=.6;setMsg('');return}
+  if(!G.autoOn)jump();
+}
+function stepJump(dt){
+  if(!G.air)return;
+  G.jt+=dt/CFG.jumpDur;
+  if(G.jt>=1){G.air=false;G.jt=0;G.h=0}else G.h=4*G.jt*(1-G.jt);
+}
+function cross(k){
+  if(G.h>=CFG.clear){
+    const rw=reward();
+    G.score++;G.earned+=rw;S.coins+=rw;S.total++;
+    if(G.score>S.best){S.best=G.score;G.newRec=true}
+    G.pops.push({t:0,txt:'+'+rw});
+    sfx.jump(G.score);
+    if(G.autoOn&&G.autoLeft===0)endEffect('auto');
+    save();hud();
+  }else{
+    G.th=PI2*k-Math.PI;            // corda parada embaixo, nos pés
+    finish(false);
+  }
+}
+function finish(quit){
+  if(G.state==='over')return;
+  G.state='over';
+  if(G.slowT>0)endEffect('slow');
+  if(G.autoOn)endEffect('auto');
+  S.rounds++;save();hud();
+  if(!quit){sfx.fail();G.overT=.45}
+}
+function claimable(){return CHALLENGES.some(c=>!S.done[c.id]&&c.val(S)>=c.goal)}
+function showOver(){
+  $('ovScore').textContent=G.score;
+  $('ovInfo').innerHTML='🪙 +'+G.earned+'<br>'+(G.newRec?'🏆 Novo recorde!':'Recorde: '+S.best)+(claimable()?'<br>🎯 Há desafios para resgatar!':'');
+  $('over').style.display='flex';
+}
+
+function update(dt){
+  G.pops.forEach(p=>p.t+=dt);G.pops=G.pops.filter(p=>p.t<.8);
+  if(G.state==='over'){if(G.overT>0&&(G.overT-=dt)<=0)showOver();return}
+  if(G.state!=='play')return;
+  stepJump(dt);
+  if(G.wait>0){G.wait-=dt;return}
+  if(G.slowT>0&&(G.slowT-=dt)<=0)endEffect('slow');
+  const w=PI2*rps()*(G.slowT>0?CFG.slowMult:1);
+  if(G.autoOn&&G.autoLeft>0&&!G.air){
+    const ttc=(PI2-phase(G.th))/w;            // tempo até a corda passar pelos pés
+    if(ttc<=CFG.jumpDur/2&&ttc>.1){jump();G.autoLeft--}
+  }
+  const k0=Math.floor((G.th+Math.PI)/PI2);
+  G.th+=w*dt;
+  const k1=Math.floor((G.th+Math.PI)/PI2);
+  if(k1>k0)cross(k1);
+}
+
+/* ===== Desenho ===== */
+function draw(){
+  const c=ctx;c.clearRect(0,0,W,H);
+  const gy=H*.72,s=Math.min(W,H)*.14,px=W/2,tm=performance.now()/1000;
+  c.fillStyle=FG;
+  c.globalAlpha=.07;                          // cenário: morros, nuvens e chão
+  c.beginPath();c.ellipse(W*.2,gy,W*.35,H*.14,0,Math.PI,PI2);c.fill();
+  c.beginPath();c.ellipse(W*.8,gy,W*.4,H*.2,0,Math.PI,PI2);c.fill();
+  for(let i=0;i<3;i++){const x=((i*W*.45+tm*8)%(W+120))-60,y=H*(.12+i*.07);
+    c.beginPath();c.ellipse(x,y,36,12,0,0,PI2);c.ellipse(x+22,y-8,22,12,0,0,PI2);c.fill()}
+  c.globalAlpha=.16;c.fillRect(0,gy,W,H-gy);
+  c.globalAlpha=1;c.fillRect(0,gy,W,2);
+  // personagem
+  const sk=SKINS[S.skin]||SKINS.default;
+  (sk.draw||SKINS.default.draw)(c,px,gy-G.h*s*1.6,s,sk);
+  // corda
+  const hy=gy-s*.5,hx=s*1.1,cs=Math.cos(G.th);
+  const ym=hy-(cs>0?s*2.4:s*.5)*cs;
+  c.strokeStyle=FG;c.lineWidth=Math.max(3,s*.08);c.lineCap='round';c.lineJoin='round';
+  c.beginPath();
+  for(let i=0;i<=24;i++){const u=i/24,y=hy+(ym-hy)*(1-Math.pow(Math.abs(2*u-1),2.5));
+    i?c.lineTo(px-hx+2*hx*u,y):c.moveTo(px-hx,y)}
+  c.stroke();
+  c.fillStyle='#ff7a3d';
+  [-hx,hx].forEach(d=>{c.beginPath();c.arc(px+d,hy,s*.11,0,PI2);c.fill()});
+  // pontos flutuantes
+  c.font='bold '+Math.round(s*.4)+'px system-ui';c.textAlign='center';c.fillStyle='#ffb703';
+  G.pops.forEach(p=>{c.globalAlpha=1-p.t/.8;c.fillText(p.txt,px,gy-s*2.2-p.t*60)});
+  c.globalAlpha=1;
+}
+
+function setAb(id,title,owned,status,active,ready){
+  const b=$(id),h='<b>'+title+'</b><small>'+status+'</small>';
+  if(b.dataset.h!==h){b.dataset.h=h;b.innerHTML=h}
+  b.disabled=!owned;b.classList.toggle('act',active);b.classList.toggle('rdy',ready);
+}
+function abUI(){
+  const n=Date.now(),sl=Math.max(0,Math.ceil((S.cd.slow-n)/1000)),au=Math.max(0,Math.ceil((S.cd.auto-n)/1000));
+  setAb('bSlow','🐢 Slow',S.slow,!S.slow?'Compre na loja':G.slowT>0?'Ativa '+Math.ceil(G.slowT)+'s':sl>0?'Recarga '+sl+'s':'Pronta',
+    G.slowT>0,S.slow&&!G.slowT&&!sl&&G.state==='play');
+  setAb('bAuto','🤖 Auto-jump',S.auto,!S.auto?'Compre na loja':G.autoOn?'Restam '+G.autoLeft:au>0?'Recarga '+au+'s':'Pronta',
+    G.autoOn,S.auto&&!G.autoOn&&!au&&G.state==='play');
+}
+function loop(t){
+  if(!G.on)return;
+  const dt=Math.min((t-G.last)/1000||0,.05);G.last=t;
+  if(!G.paused)update(dt);
+  draw();abUI();
+  G.raf=requestAnimationFrame(loop);
+}
+
+/* ===== Telas ===== */
+function renderMenu(){$('mCoins').textContent='🪙 '+S.coins;$('mBest').textContent='🏆 Recorde: '+S.best}
+function shopCard(icon,name,desc,btn,dis,key,extra){
+  return '<div class="card"><div style="font-size:1.8rem">'+icon+'</div><div class="t"><b>'+name+'</b><small>'+desc+'</small>'+(extra||'')+'</div><button class="pri" data-buy="'+key+'"'+(dis?' disabled':'')+'>'+btn+'</button></div>';
+}
+function refund(){return S.lvl*CFG.lvlCost+(S.slow?CFG.slowCost:0)+(S.auto?CFG.autoCost:0)}
+function renderShop(){
+  $('shopCoins').textContent='🪙 '+S.coins;
+  const L=S.lvl,max=L>=CFG.maxLvl;
+  $('shopList').innerHTML=
+    shopCard('⚡','Velocidade '+L+'/'+CFG.maxLvl,'Corda mais rápida. Moedas por pulo: '+reward()+(max?'':' → '+(reward()+CFG.coinStep)),
+      max?'Máximo':'🪙 '+CFG.lvlCost,max||S.coins<CFG.lvlCost,'lvl')+
+    shopCard('🐢','Slow','Corda mais lenta por '+CFG.slowDur+'s. Recarga '+CFG.slowCd+'s. Moedas por pulo não mudam.',
+      S.slow?'Comprado':'🪙 '+CFG.slowCost,S.slow||S.coins<CFG.slowCost,'slow')+
+    shopCard('🤖','Auto-jump',CFG.autoJumps+' pulos automáticos. Recarga '+CFG.autoCd+'s.',
+      S.auto?'Comprado':'🪙 '+CFG.autoCost,S.auto||S.coins<CFG.autoCost,'auto')+
+    shopCard('♻️','Reiniciar habilidades','Devolve '+refund()+' 🪙 gastas. Taxa: '+CFG.resetFee+' 🪙 (não devolvida).',
+      '🪙 '+CFG.resetFee,refund()===0||S.coins<CFG.resetFee,'reset');
+}
+function buy(k){
+  if(k==='lvl'&&S.lvl<CFG.maxLvl&&S.coins>=CFG.lvlCost){S.coins-=CFG.lvlCost;S.lvl++}
+  else if(k==='slow'&&!S.slow&&S.coins>=CFG.slowCost){S.coins-=CFG.slowCost;S.slow=true}
+  else if(k==='auto'&&!S.auto&&S.coins>=CFG.autoCost){S.coins-=CFG.autoCost;S.auto=true}
+  else if(k==='reset'){
+    if(refund()===0||S.coins<CFG.resetFee)return;
+    const r=refund();
+    ask('Pagar '+CFG.resetFee+' moedas para reiniciar? Você recebe '+r+' moedas de volta e perde as melhorias e habilidades. Saldo final: '+(S.coins-CFG.resetFee+r)+'.',()=>{
+      S.coins=S.coins-CFG.resetFee+r;S.lvl=0;S.slow=false;S.auto=false;S.cd={slow:0,auto:0};
+      save();sfx.buy();renderShop();toast('Habilidades reiniciadas');
+    });
+    return;
+  }else return;
+  save();sfx.buy();renderShop();
+}
+function renderChal(){
+  $('chalCoins').textContent='🪙 '+S.coins;
+  $('chalList').innerHTML=CHALLENGES.map(c=>{
+    const v=Math.min(c.val(S),c.goal),ok=v>=c.goal,got=S.done[c.id];
+    const btn=got?'<button disabled>🏅</button>':ok?'<button class="pri" data-claim="'+c.id+'">+'+c.reward+' 🪙</button>':'<button disabled>'+v+'/'+c.goal+'</button>';
+    return '<div class="card"><div class="t"><b>'+c.name+'</b><small>'+c.desc+' · prêmio '+c.reward+' 🪙</small><div class="bar"><i style="width:'+(v/c.goal*100)+'%"></i></div></div>'+btn+'</div>';
+  }).join('');
+}
+function claim(id){
+  const c=CHALLENGES.find(x=>x.id===id);
+  if(!c||S.done[id]||c.val(S)<c.goal)return;
+  S.done[id]=1;S.coins+=c.reward;save();sfx.buy();renderChal();toast('🏅 '+c.name+': +'+c.reward+' moedas');
+}
+const COLORS=['#1b2a41','#0f766e','#4c1d95','#7f1d1d','#14532d','#fef3c7','#e0f2fe','#f5f5f4'];
+function renderSet(){
+  $('sndBtn').textContent=S.sound?'🔊 Ligado':'🔇 Desligado';
+  $('swatches').innerHTML=COLORS.map(c=>'<button data-bg="'+c+'" style="background:'+c+(c===S.bg?';border-color:var(--ac)':'')+'" aria-label="'+c+'"></button>').join('');
+  $('skinList').innerHTML=Object.values(SKINS).map(k=>'<button data-skin="'+k.id+'" title="'+k.name+'" style="'+(k.img?'':'background:'+k.color+';')+(k.id===S.skin?'border-color:var(--ac)':'')+'">'+(k.img?'<img src="'+k.img.src+'" alt="">':'')+'</button>').join('');
+  $('skinDel').style.display=SKINS[S.skin]&&SKINS[S.skin].custom?'block':'none';
+  $('bgIn').value=/^#[0-9a-f]{6}$/i.test(S.bg)?S.bg:'#1b2a41';
+}
+function setBg(c){S.bg=c;applyTheme();save();renderSet()}
+
+function go(id){
+  G.on=false;cancelAnimationFrame(G.raf);
+  document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id));
+  ({menu:renderMenu,shop:renderShop,chal:renderChal,set:renderSet,game:startRound})[id]();
+}
+
+/* ===== Eventos ===== */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.go){if(G.on&&G.state==='play')finish(true);go(b.dataset.go)}
+  else if(b.dataset.buy)buy(b.dataset.buy);
+  else if(b.dataset.claim)claim(b.dataset.claim);
+  else if(b.dataset.bg)setBg(b.dataset.bg);
+  else if(b.dataset.skin){S.skin=b.dataset.skin;save();renderSet()}
+});
+$('again').onclick=startRound;
+$('bSlow').onclick=useSlow;
+$('bAuto').onclick=useAuto;
+$('bQuit').onclick=()=>{if(G.state==='play')finish(true);go('menu')};
+$('sndBtn').onclick=()=>{S.sound=!S.sound;save();renderSet();sfx.buy()};
+$('skinAdd').onclick=()=>$('skinIn').click();
+$('skinIn').onchange=e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(S.custom.length>=10){toast('Limite de 10 skins. Remova uma antes.');return}
+  const u=URL.createObjectURL(f),im=new Image();
+  im.onload=()=>{
+    const c=document.createElement('canvas'),mx=Math.max(im.width,im.height),px=mx<=128,k=px?1:Math.min(1,256/mx);
+    c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
+    c.getContext('2d').drawImage(im,0,0,c.width,c.height);   // imagens até 128px são tratadas como pixel art
+    URL.revokeObjectURL(u);
+    const sk={id:'c'+Date.now(),name:'Skin '+(S.custom.length+1),img:c.toDataURL('image/png'),pixel:px};
+    S.custom.push(sk);regCustom(sk);S.skin=sk.id;save();renderSet();toast('Skin adicionada!');
+  };
+  im.onerror=()=>toast('Não consegui abrir essa imagem');
+  im.src=u;
+};
+$('skinDel').onclick=()=>{
+  const id=S.skin;if(!SKINS[id]||!SKINS[id].custom)return;
+  ask('Remover esta skin do aparelho?',()=>{
+    S.custom=S.custom.filter(c=>c.id!==id);delete SKINS[id];S.skin='default';save();renderSet();
+  });
+};
+$('bgIn').oninput=e=>setBg(e.target.value);
+cv=$('cv');ctx=cv.getContext('2d');
+cv.addEventListener('pointerdown',e=>{e.preventDefault();tap()});
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();tap()}});
+window.addEventListener('resize',()=>{if(G.on)resize()});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden&&G.on&&G.state==='play'){G.paused=true;setMsg('Pausado. Toque para continuar')}
+});
+
+applyTheme();renderMenu();
+</script>
+</body>
+</html>
