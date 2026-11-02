@@ -146,7 +146,7 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
     <div class="card" style="flex-direction:column;align-items:stretch">
       <div>Skin do personagem</div>
       <div class="sw sk" id="skinList"></div>
-      <button id="skinAdd">🖼️ Adicionar skin (imagem) — 🪙 1000</button>
+      <button id="skinAdd">🖼️ Adicionar skin (imagem) — 🪙 500</button>
       <button id="skinDel" style="display:none">🗑️ Remover skin atual</button>
       <input type="file" id="skinIn" accept="image/*" hidden>
     </div>
@@ -166,24 +166,24 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
 /* ===== Configuração (ajuste aqui o equilíbrio do jogo) ===== */
 const CFG={
   baseCoins:30, coinStep:10,          // moedas por pulo: 30 + 10 por nível
-  lvlCosts:[3000,6000,11000,17000,28000], maxLvl:5,               // melhoria de velocidade
+  lvlCosts:[1500,3000,5500,8500,14000], maxLvl:5,               // melhoria de velocidade
   baseRps:.85, rpsStep:.1,            // voltas da corda por segundo (nível 0 → 5: .85 → 1.35)
-  slowCost:8000, slowDur:30, slowCd:60, slowMult:.62,   // Slow: corda a 62% da velocidade
-  autoCost:5000, autoJumps:15, autoCd:40,
-  resetFee:4000,
+  slowCost:4000, slowDur:30, slowCd:60, slowMult:.62,   // Slow: corda a 62% da velocidade
+  autoCost:2500, autoJumps:15, autoCd:40,
+  resetFee:2000,
   jumpDur:.5,                         // duração de um pulo (s)
   clear:.4                            // altura mínima (fração do pulo máximo) para livrar a corda
 };
 
 /* ===== Desafios: para criar novos, basta adicionar uma linha ===== */
 const CHALLENGES=[
-  {id:'r10', name:'Aquecimento',   desc:'10 pulos em uma rodada',  goal:10,   reward:300,  val:s=>s.best},
-  {id:'r20', name:'Pegando ritmo', desc:'20 pulos em uma rodada',  goal:20,   reward:600, val:s=>s.best},
-  {id:'r50', name:'Sem tropeçar',  desc:'50 pulos em uma rodada',  goal:50,   reward:1500, val:s=>s.best},
-  {id:'r100',name:'Mestre da corda',desc:'100 pulos em uma rodada',goal:100,  reward:3000, val:s=>s.best},
-  {id:'t500',name:'Maratona',      desc:'500 pulos no total',      goal:500,  reward:2000, val:s=>s.total},
-  {id:'t2000',name:'Lenda',        desc:'2000 pulos no total',     goal:2000, reward:5000, val:s=>s.total},
-  {id:'p10', name:'Persistente',   desc:'Jogar 10 rodadas',        goal:10,   reward:800, val:s=>s.rounds}
+  {id:'r10', name:'Aquecimento',   desc:'10 pulos em uma rodada',  goal:10,   reward:150,  val:s=>s.best},
+  {id:'r20', name:'Pegando ritmo', desc:'20 pulos em uma rodada',  goal:20,   reward:300, val:s=>s.best},
+  {id:'r50', name:'Sem tropeçar',  desc:'50 pulos em uma rodada',  goal:50,   reward:750, val:s=>s.best},
+  {id:'r100',name:'Mestre da corda',desc:'100 pulos em uma rodada',goal:100,  reward:1500, val:s=>s.best},
+  {id:'t500',name:'Maratona',      desc:'500 pulos no total',      goal:500,  reward:1000, val:s=>s.total},
+  {id:'t2000',name:'Lenda',        desc:'2000 pulos no total',     goal:2000, reward:2500, val:s=>s.total},
+  {id:'p10', name:'Persistente',   desc:'Jogar 10 rodadas',        goal:10,   reward:400, val:s=>s.rounds}
 ];
 
 /* ===== Skins: o personagem é desenhado por uma skin.
@@ -240,18 +240,19 @@ const ACH=[
 ];
 
 /* ===== Preços de personalização (skins e fundos; estilos de pulo desbloqueiam por pulos) ===== */
-const SKINP={azul:400,verde:400,rosa:400,roxo:600,branco:600,ouro:2500},IMGP=1000,BGP=300,PICKP=1500;
+const SKINP={azul:200,verde:200,rosa:200,roxo:300,branco:300,ouro:1200},IMGP=500,BGP=150,PICKP=750;
 const BGS=['#1b2a41','#0f766e','#4c1d95','#7f1d1d','#14532d','#fef3c7','#e0f2fe','#f5f5f4'];
 
 /* ===== Boxe: tudo custa moedas, exceto o equipamento inicial (preço 0).
    gl/bag: [id,nome,cor,preço(,padrão])  fx/sp: [id,nome,preço] ===== */
-const BX={time:30,gap:.2,base:[8,9,10,12,14,16],pcost:[2500,5000,9000,15000,24000],
-  gl:[['vermelha','Luva vermelha','#dc2626',0],['azul','Luva azul','#2563eb',500],['verde','Luva verde','#16a34a',500],['amarela','Luva amarela','#facc15',900],['preta','Luva preta','#3f3f46',1200],['rosa','Luva rosa','#ec4899',1500],['dourada','Luva dourada','#eab308',4000]],
-  bag:[['lona','Saco de lona','#8b5a2b',0,''],['azul','Saco azul','#2563eb',700,''],['vermelho','Saco vermelho','#dc2626',700,''],['listrado','Saco listrado','#16a34a',1500,'s'],['estrelas','Saco estrelado','#7c3aed',2500,'*'],['ouro','Saco dourado','#eab308',5000,'g']],
-  fx:[['simples','Impacto simples',0],['faiscas','Faíscas',1000],['estrelas','Estrelas',2000],['chamas','Chamas',3500]],
-  sp:[['nenhuma','Sem animação especial',0],['tremor','Tremor de tela',1500],['giro','Saco giratório nos combos',3000]]};
+const BX={time:60,gap:.2,base:[12,14,16,19,22,26],pcost:[1200,2500,4500,7500,12000],
+  gl:[['vermelha','Luva vermelha','#dc2626',0],['azul','Luva azul','#2563eb',250],['verde','Luva verde','#16a34a',250],['amarela','Luva amarela','#facc15',450],['preta','Luva preta','#3f3f46',600],['rosa','Luva rosa','#ec4899',750],['dourada','Luva dourada','#eab308',2000]],
+  bag:[['lona','Saco de lona','#8b5a2b',0,''],['azul','Saco azul','#2563eb',350,''],['vermelho','Saco vermelho','#dc2626',350,''],['listrado','Saco listrado','#16a34a',750,'s'],['estrelas','Saco estrelado','#7c3aed',1250,'*'],['ouro','Saco dourado','#eab308',2500,'g']],
+  fx:[['simples','Impacto simples',0],['faiscas','Faíscas',500],['estrelas','Estrelas',1000],['chamas','Chamas',1750]],
+  sp:[['nenhuma','Sem animação especial',0],['tremor','Tremor de tela',750],['giro','Saco giratório nos combos',1500]]};
 const BCAT={gl:'Luvas',bag:'Sacos de pancada',fx:'Efeitos dos golpes',sp:'Animações especiais'};
-const MOVES={jab:{i:1.5,u:0},direto:{i:2.6,u:0},cruzado:{i:3.2,u:.15},gancho:{i:2.3,u:1}};
+// d = duração do golpe (s), ht = instante em que acerta o saco
+const MOVES={jab:{i:1.4,u:0,tw:0,d:.16,ht:.06},direto:{i:2.8,u:0,tw:0,d:.24,ht:.10},cruzado:{i:3.3,u:.1,tw:1,d:.30,ht:.13},gancho:{i:2.4,u:1.2,tw:0,d:.34,ht:.17}};
 // combos: sequência de golpes (até 0,9 s entre eles) + moedas de bônus. Para criar outro, adicione uma linha.
 const COMBOS=[
   {n:'1-2-3',s:['jab','direto','cruzado'],b:10},{n:'1-1-2',s:['jab','jab','direto'],b:8},
@@ -579,7 +580,7 @@ function skinPick(id){
 function bgPickC(c){if(S.own['bg:'+c])setBg(c);else purchase('bg:'+c,BGP,'esta cor de fundo',()=>setBg(c))}
 
 /* ===== Modo boxe ===== */
-const B={on:false,state:'ready',t:0,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,an:[],fx:[],pops:[],newRec:false,raf:0,last:0};
+const B={on:false,state:'ready',t:0,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,dent:0,hy:.45,tw:0,an:[],fx:[],pops:[],newRec:false,raf:0,last:0};
 let bcv,bctx,BW=300,BH=400;
 const bxPrice=(c,it)=>c==='fx'||c==='sp'?it[2]:it[3];
 const bxOwn=(c,it)=>bxPrice(c,it)===0||!!S.bxOwn[c+':'+it[0]];
@@ -590,7 +591,7 @@ function bgeo(){return{x:BW*.66,py:BH*.04,y:BH*.17,w:BH*.11,h:BH*.34}}
 function bhud(){$('bt').textContent='⏱ '+Math.max(0,Math.ceil(B.t));$('bn').textContent=B.n;$('bc').textContent='🪙 '+S.coins}
 function startBox(){
   cancelAnimationFrame(B.raf);
-  Object.assign(B,{on:true,state:'ready',t:BX.time,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,an:[],fx:[],pops:[],newRec:false});
+  Object.assign(B,{on:true,state:'ready',t:BX.time,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,dent:0,hy:.45,tw:0,an:[],fx:[],pops:[],newRec:false});
   $('bover').style.display='none';
   $('bmsg').textContent='Escolha um golpe para começar o treino de '+BX.time+' segundos. Recorde: '+S.bxBest+' socos';$('bmsg').style.display='flex';
   bres();bhud();B.last=performance.now();B.raf=requestAnimationFrame(bloop);
@@ -613,8 +614,8 @@ function punch(k){
   bhud();
 }
 function impact(k){
-  const m=MOVES[k],g=bgeo(),e=S.bxEq.fx,x=g.x-g.w/2,y=g.y+g.h*(k==='gancho'?.8:.45);
-  B.w+=m.i;B.vy-=m.u*170;B.sq=1;sfx.punch();
+  const m=MOVES[k],g=bgeo(),e=S.bxEq.fx,hy=k==='gancho'?.8:.45,x=g.x-g.w/2,y=g.y+g.h*hy;
+  B.w+=m.i;B.vy-=m.u*170;B.sq=1;B.dent=1;B.hy=hy;if(m.tw)B.tw=1;sfx.punch();
   if(S.bxEq.sp==='tremor')B.shake=.25;
   B.fx.push({k:'ring',x,y,t:0,l:.3,vx:0,vy:0});
   const n=e==='faiscas'?10:e==='estrelas'?6:e==='chamas'?8:0;
@@ -623,41 +624,70 @@ function impact(k){
 function bupdate(dt){
   B.pops.forEach(p=>p.t+=dt);B.pops=B.pops.filter(p=>p.t<.9).slice(-5);
   B.fx.forEach(f=>{f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt});B.fx=B.fx.filter(f=>f.t<f.l);
-  B.an.forEach(a=>{a.t+=dt;if(!a.hit&&a.t>=.07){a.hit=true;impact(a.k)}});B.an=B.an.filter(a=>a.t<.26);
+  B.an.forEach(a=>{a.t+=dt;if(!a.hit&&a.t>=MOVES[a.k].ht){a.hit=true;impact(a.k)}});B.an=B.an.filter(a=>a.t<MOVES[a.k].d);
   B.w+=(-30*Math.sin(B.a)-2.2*B.w)*dt;B.w=Math.max(-7,Math.min(7,B.w));B.a+=B.w*dt;   // saco como pêndulo
   if(Math.abs(B.a)>1.1){B.a=Math.sign(B.a)*1.1;B.w*=-.3}        // limite de balanço
   B.vy+=(-90*B.y-7*B.vy)*dt;B.y+=B.vy*dt;                     // sobe e desce no gancho
-  B.sq=Math.max(0,B.sq-dt*6);B.spin=Math.max(0,B.spin-dt*1.4);B.shake=Math.max(0,B.shake-dt);
+  B.sq=Math.max(0,B.sq-dt*6);B.dent=Math.max(0,B.dent-dt*4);B.tw=Math.max(0,B.tw-dt*2.2);
+  B.spin=Math.max(0,B.spin-dt*1.4);B.shake=Math.max(0,B.shake-dt);
   if(B.state==='play'){B.t-=dt;bhud();if(B.t<=0)endBox(false)}
 }
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+// posição da luva em cada golpe (p = 0..1 do golpe). b = dobra do cotovelo (+ para baixo, - para cima)
+function glovePos(k,p,rx,ry,tx,ty,s){
+  if(k==='gancho'){                              // abaixa, sobe por baixo do saco e volta
+    const dx=rx+s*.5,dy=ry+s*1;
+    if(p<.28){const e=p/.28;return{x:rx+(dx-rx)*e,y:ry+(dy-ry)*e,b:1}}
+    if(p<.5){const e=(p-.28)/.22;return{x:dx+(tx-dx)*e,y:dy+(ty-dy)*e,b:1-.6*e}}
+    const e=(p-.5)/.5;return{x:tx+(rx-tx)*e,y:ty+(ry-ty)*e,b:.4+.6*e}
+  }
+  const f=MOVES[k].ht/MOVES[k].d,e0=p<f?p/f:1-(p-f)/(1-f),e=e0*e0*(3-2*e0);
+  const x=rx+(tx-rx)*e,y=ry+(ty-ry)*e,a=Math.sin(Math.PI*e);
+  if(k==='cruzado')return{x:x-a*s*.3,y:y-a*s*.9,b:-1};   // arco largo, cotovelo erguido
+  return{x,y,b:.15}                                        // jab e direto: braço reto
+}
+function arm(c,sx,sy,gx,gy,b,L){
+  const dx=gx-sx,dy=gy-sy,d=Math.hypot(dx,dy)||1,hh=Math.sqrt(Math.max(0,L*L-d*d/4));
+  const ex=(sx+gx)/2-dy/d*hh*b,ey=(sy+gy)/2+dx/d*hh*b;
+  c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.lineTo(gx,gy);c.stroke();
+}
 function bdraw(){
-  const c=bctx,g=bgeo(),s=Math.min(BW,BH)*.16,gy=BH*.84,bx=BW*.24;
+  const c=bctx,g=bgeo(),s=Math.min(BW,BH)*.16,gy=BH*.84,bx=BW*.24,w=g.w,h=g.h,top=g.y-g.py+B.y;
   c.clearRect(0,0,BW,BH);c.save();
   if(B.shake>0)c.translate((Math.random()-.5)*B.shake*36,(Math.random()-.5)*B.shake*36);
-  c.fillStyle=FG;c.globalAlpha=.16;c.fillRect(0,gy,BW,BH-gy);c.globalAlpha=1;c.fillRect(0,gy,BW,2);
-  const sk=SKINS[S.skin]||SKINS.default;(sk.draw||SKINS.default.draw)(c,bx,gy,s,sk);
+  c.fillStyle=FG;c.globalAlpha=.16;c.fillRect(0,gy,BW,BH-gy);
+  c.globalAlpha=.12;c.beginPath();c.ellipse(g.x+Math.sin(B.a)*BH*.45,gy+5,w*.7,6,0,0,PI2);c.fill();   // sombra do saco
+  c.globalAlpha=1;c.fillRect(0,gy,BW,2);
+  // lutador: o corpo acompanha o golpe
+  const sk=SKINS[S.skin]||SKINS.default,ba=B.an[B.an.length-1],bp=ba?ba.t/MOVES[ba.k].d:0,ev=Math.sin(Math.PI*bp);
+  c.save();c.translate(bx,gy);
+  if(ba){if(ba.k==='direto')c.rotate(.16*ev);else if(ba.k==='jab')c.rotate(.05*ev);
+    else if(ba.k==='cruzado'){c.rotate(-.1*ev);c.scale(1-.12*ev,1)}else c.scale(1,1-.16*Math.sin(Math.PI*Math.min(1,bp*2)))}
+  (sk.draw||SKINS.default.draw)(c,0,0,s,sk);c.restore();
   const gl=bxEq('gl')[2];
-  for(let h=0;h<2;h++){
-    const a=B.an.filter(q=>q.h===h).pop(),sx=bx+s*.4,sy=gy-s*(.72-.12*h);
-    let gx=sx+s*.45,gyy=sy+s*.1;
-    if(a){const p=a.t/.26,ext=p<.3?p/.3:1-(p-.3)/.7,tx=g.x-g.w/2-s*.25,ty=g.y+g.h*(a.k==='gancho'?.8:.45);
-      gx+=(tx-gx)*ext;gyy+=(ty-gyy)*ext;
-      if(a.k==='cruzado')gyy-=Math.sin(ext*Math.PI)*s*.7;
-      if(a.k==='gancho')gyy+=(1-ext)*s*.9}
-    c.strokeStyle=sk.color;c.lineWidth=s*.16;c.lineCap='round';c.beginPath();c.moveTo(sx,sy);c.lineTo(gx,gyy);c.stroke();
-    c.fillStyle=gl;c.beginPath();c.arc(gx,gyy,s*.3,0,PI2);c.fill();c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.stroke();
+  for(let hd=0;hd<2;hd++){
+    const sx=bx+s*.4,sy=gy-s*(.72-.12*hd),rx=sx+s*.45,ry=sy+s*.1,a=B.an.filter(q=>(q.k==='jab'||q.k==='cruzado'?0:1)===hd).pop();
+    let gp={x:rx,y:ry,b:.15};
+    if(a){const tx=g.x-w/2-s*.25,ty=g.y+h*(a.k==='gancho'?.8:.45);gp=glovePos(a.k,a.t/MOVES[a.k].d,rx,ry,tx,ty,s)}
+    c.strokeStyle=sk.color;c.lineWidth=s*.16;c.lineCap='round';c.lineJoin='round';arm(c,sx,sy,gp.x,gp.y,gp.b,s*.65);
+    c.fillStyle=gl;c.beginPath();c.arc(gp.x,gp.y,s*.3,0,PI2);c.fill();c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.stroke();
+    c.fillStyle='rgba(255,255,255,.3)';c.beginPath();c.arc(gp.x-s*.08,gp.y-s*.1,s*.09,0,PI2);c.fill();
   }
-  const bg=bxEq('bag'),w=g.w,h=g.h;
+  // saco: correntes em V, corpo com volume, costuras, marca do impacto
+  const bg=bxEq('bag');
   c.save();c.translate(g.x,g.py);c.rotate(B.a);
-  c.strokeStyle=FG;c.lineWidth=3;c.beginPath();c.moveTo(0,0);c.lineTo(0,g.y-g.py+B.y);c.stroke();
-  c.translate(0,g.y-g.py+B.y+h/2);
-  c.scale((1-.15*B.sq)*(B.spin>0?Math.cos((1-B.spin)*PI2*2):1),1+.05*B.sq);
+  c.strokeStyle=FG;c.lineWidth=2.5;c.beginPath();c.moveTo(0,0);c.lineTo(-w*.32,top);c.moveTo(0,0);c.lineTo(w*.32,top);c.stroke();
+  c.translate(0,top+h/2);
+  c.scale((1-.15*B.sq)*(B.spin>0?Math.cos((1-B.spin)*PI2*2):1)*(1-.2*B.tw*Math.abs(Math.sin(B.tw*10))),1+.05*B.sq);
   c.fillStyle=bg[2];rr(c,-w/2,-h/2,w,h,w*.28);c.fill();
-  c.fillStyle='rgba(0,0,0,.22)';c.fillRect(-w/2,-h/2+h*.08,w,h*.06);c.fillRect(-w/2,h/2-h*.14,w,h*.06);
+  const gr=c.createLinearGradient(-w/2,0,w/2,0);gr.addColorStop(0,'rgba(255,255,255,.3)');gr.addColorStop(.5,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.35)');
+  c.fillStyle=gr;rr(c,-w/2,-h/2,w,h,w*.28);c.fill();
+  c.fillStyle='rgba(0,0,0,.25)';c.fillRect(-w/2,-h/2+h*.07,w,h*.07);c.fillRect(-w/2,h/2-h*.14,w,h*.07);
+  c.strokeStyle='rgba(0,0,0,.2)';c.lineWidth=1;[.3,.5,.7].forEach(f=>{c.beginPath();c.moveTo(-w/2,-h/2+h*f);c.lineTo(w/2,-h/2+h*f);c.stroke()});
   if(bg[4]==='s'){c.fillStyle='rgba(255,255,255,.35)';[.3,.5,.7].forEach(f=>c.fillRect(-w/2,-h/2+h*f,w,h*.05))}
   if(bg[4]==='*'){c.fillStyle='#fde68a';c.font=Math.round(w*.35)+'px system-ui';c.textAlign='center';c.fillText('★',0,-h*.2);c.fillText('★',-w*.2,h*.05);c.fillText('★',w*.2,h*.25)}
-  c.fillStyle=bg[4]==='g'?'rgba(255,255,255,.45)':'rgba(255,255,255,.18)';c.fillRect(-w*.34,-h*.42,w*.1,h*.84);
+  if(bg[4]==='g'){c.fillStyle='rgba(255,255,255,.4)';c.fillRect(-w*.3,-h*.4,w*.1,h*.8)}
+  if(B.dent>0){c.fillStyle='rgba(0,0,0,'+(.3*B.dent)+')';c.beginPath();c.ellipse(-w/2+3,(B.hy-.5)*h,w*.2*B.dent,h*.1,0,0,PI2);c.fill()}
   c.restore();
   B.fx.forEach(f=>{const p=f.t/f.l;c.globalAlpha=1-p;
     if(f.k==='ring'){c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(f.x,f.y,8+p*s*.9,0,PI2);c.stroke()}
