@@ -33,7 +33,7 @@ h2{margin:0;font-size:1.3rem;flex:1}
 .bar i{display:block;height:100%;background:var(--ac)}
 #menu{justify-content:center;align-items:stretch;gap:14px}
 #menu .row{display:flex;gap:8px;justify-content:center}
-#menu .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+#menu .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 #play{font-size:1.5rem;padding:18px}
 #game{padding:0;gap:0}
 #hud{display:flex;justify-content:space-between;align-items:center;padding:max(env(safe-area-inset-top),8px) 14px 4px;font-weight:700}
@@ -59,6 +59,9 @@ h2{margin:0;font-size:1.3rem;flex:1}
 #modal .r button{flex:1;background:#e6e6ee;color:#1a1a2e}
 #modal .r button.pri{background:var(--ac);color:#fff}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:10;max-width:90%;text-align:center}
+h3{margin:8px 0 0;font-size:1rem;opacity:.85}
+.stb{display:block;width:100%;text-align:left}.stb small{display:block;opacity:.8;margin-top:2px}.stb.sel{outline:3px solid var(--ac)}
+#nt{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);background:#000d;color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:11;max-width:92%;text-align:center;pointer-events:none}
 @media (max-height:520px){h1{font-size:1.6rem}#play{padding:10px}#hs{font-size:2rem}}
 </style>
 </head>
@@ -71,6 +74,7 @@ h2{margin:0;font-size:1.3rem;flex:1}
   <div class="grid">
     <button data-go="shop">🛒<br>Loja</button>
     <button data-go="chal">🎯<br>Desafios</button>
+    <button data-go="ach">🏆<br>Conquistas</button>
     <button data-go="set">⚙️<br>Config.</button>
   </div>
 </section>
@@ -105,6 +109,11 @@ h2{margin:0;font-size:1.3rem;flex:1}
   <div class="col" id="chalList"></div>
 </section>
 
+<section id="ach" class="scr">
+  <div class="top"><button data-go="menu">←</button><h2>Conquistas</h2><span class="chip" id="achCount"></span></div>
+  <div class="col" id="achList"></div>
+</section>
+
 <section id="set" class="scr">
   <div class="top"><button data-go="menu">←</button><h2>Configurações</h2></div>
   <div class="col">
@@ -121,11 +130,16 @@ h2{margin:0;font-size:1.3rem;flex:1}
       <button id="skinDel" style="display:none">🗑️ Remover skin atual</button>
       <input type="file" id="skinIn" accept="image/*" hidden>
     </div>
+    <div class="card" style="flex-direction:column;align-items:stretch">
+      <div>Estilo de pulo <small>(só muda a animação)</small></div>
+      <div id="styleList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </div>
 </section>
 
 <div id="modal"><div><span id="mTxt"></span><span class="r"><button id="mNo">Cancelar</button><button class="pri" id="mYes">Confirmar</button></span></div></div>
 <div id="toast"></div>
+<div id="nt"></div>
 
 <script>
 'use strict';
@@ -173,9 +187,41 @@ function regCustom(c){                       // skin feita de imagem (guardada n
     }});
 }
 
+/* ===== Estilos de pulo: só mudam a animação (fx) e nunca dão vantagem.
+   Para criar outro, adicione uma linha: at = pulos totais para desbloquear ===== */
+const STYLES=[
+  {id:'basico',    name:'Pulo básico',      at:0},
+  {id:'alternado', name:'Pulo alternado',   at:50,  fx(c,t,n){c.rotate((n%2?1:-1)*.2*Math.sin(Math.PI*t))}},
+  {id:'unilateral',name:'Pulo unilateral',  at:100, fx(c,t){const k=Math.sin(Math.PI*t);c.rotate(-.22*k);c.scale(1,1-.12*k)}},
+  {id:'lateral',   name:'Pulo lateral',     at:150, fx(c,t,n,s){c.translate((n%2?1:-1)*s*.35*Math.sin(Math.PI*t),0)}},
+  {id:'tesoura',   name:'Pulo tesoura',     at:200, fx(c,t){const k=Math.sin(Math.PI*t);c.scale(1+.3*k,1-.15*k)}},
+  {id:'tras',      name:'Pulo para trás',   at:300, fx(c,t){c.scale(-1,1);c.rotate(.2*Math.sin(Math.PI*t))}},
+  {id:'corrida',   name:'Pulo corrida',     at:400, fx(c,t){c.rotate(.12+.12*Math.sin(4*Math.PI*t))}},
+  {id:'cruzado',   name:'Pulo cruzado',     at:500, fx(c,t){c.rotate(2*Math.PI*t)}}
+];
+
+/* ===== Conquistas: val/goal = progresso numérico; as sem val são liberadas por evento no jogo ===== */
+const ACH=[
+  {id:'primeiro',    cat:'Iniciantes',     name:'Primeiro pulo',     desc:'Fazer 1 pulo',                       goal:1,   val:s=>s.total},
+  {id:'comecando',   cat:'Iniciantes',     name:'Começando',         desc:'Fazer 10 pulos em uma rodada',       goal:10,  val:s=>s.best},
+  {id:'ritmo',       cat:'Iniciantes',     name:'Pegando o ritmo',   desc:'Fazer 20 pulos em uma rodada',       goal:20,  val:s=>s.best},
+  {id:'persistente', cat:'Iniciantes',     name:'Persistente',       desc:'Jogar 5 partidas',                   goal:5,   val:s=>s.rounds},
+  {id:'dinheiro',    cat:'Iniciantes',     name:'Primeiro dinheiro', desc:'Acumular 300 moedas',                goal:300, val:s=>s.coins},
+  {id:'aquecendo',   cat:'Intermediárias', name:'Aquecendo',         desc:'Fazer 50 pulos em uma rodada',       goal:50,  val:s=>s.best},
+  {id:'semtropecar', cat:'Intermediárias', name:'Sem tropeçar',      desc:'Fazer 100 pulos em uma rodada',      goal:100, val:s=>s.best},
+  {id:'colecionador',cat:'Intermediárias', name:'Colecionador',      desc:'Acumular 1.000 moedas',              goal:1000,val:s=>s.coins},
+  {id:'dedicado',    cat:'Intermediárias', name:'Dedicado',          desc:'Jogar 25 partidas',                  goal:25,  val:s=>s.rounds},
+  {id:'evoluindo',   cat:'Intermediárias', name:'Evoluindo',         desc:'Comprar 3 níveis de velocidade',     goal:3,   val:s=>s.lvl},
+  {id:'slow10',      cat:'Especiais',      name:'Na hora certa',     desc:'Usar o Slow e fazer 10 pulos durante o efeito'},
+  {id:'auto15',      cat:'Especiais',      name:'Piloto automático', desc:'Completar os 15 pulos do Auto-jump'},
+  {id:'velmax',      cat:'Especiais',      name:'Velocidade máxima', desc:'Comprar todos os níveis de velocidade',goal:5, val:s=>s.lvl},
+  {id:'superacao',   cat:'Especiais',      name:'Superação',         desc:'Bater o próprio recorde 5 vezes',    goal:5,   val:s=>s.recBreaks},
+  {id:'mestre',      cat:'Especiais',      name:'Mestre da corda',   desc:'Acumular 500 pulos no total',        goal:500, val:s=>s.total}
+];
+
 /* ===== Salvamento ===== */
 const KEY='puloCorda_v1';
-const DEF={coins:0,best:0,total:0,rounds:0,lvl:0,slow:false,auto:false,done:{},sound:true,bg:'#1b2a41',skin:'default',custom:[]};
+const DEF={coins:0,best:0,total:0,rounds:0,lvl:0,slow:false,auto:false,done:{},sound:true,bg:'#1b2a41',skin:'default',custom:[],ach:{},style:'basico',styles:{},recBreaks:0};
 function load(){
   let o={};try{o=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
   const s=Object.assign({},DEF,o);
@@ -183,6 +229,8 @@ function load(){
   s.cd=Object.assign({slow:0,auto:0},o.cd);s.done=Object.assign({},o.done);
   ['coins','best','total','rounds','lvl'].forEach(k=>s[k]=Math.max(0,Number(s[k])||0));
   s.lvl=Math.min(CFG.maxLvl,s.lvl|0);
+  s.ach=Object.assign({},o.ach);s.styles=Object.assign({},o.styles);s.recBreaks=Math.max(0,Number(s.recBreaks)||0);
+  if(!STYLES.some(x=>x.id===s.style&&s.total>=x.at))s.style='basico';
   const n=Date.now();
   if(s.cd.slow>n+CFG.slowCd*1000)s.cd.slow=0;
   if(s.cd.auto>n+CFG.autoCd*1000)s.cd.auto=0;
@@ -236,7 +284,7 @@ const sfx={
 };
 
 /* ===== Estado da partida ===== */
-const G={on:false,state:'ready',th:0,score:0,earned:0,newRec:false,air:false,jt:0,h:0,wait:0,
+const G={on:false,state:'ready',th:0,score:0,earned:0,newRec:false,air:false,jt:0,h:0,wait:0,slowJumps:0,jn:0,prevBest:0,
   slowT:0,autoOn:false,autoLeft:0,pops:[],paused:false,overT:0,last:0,raf:0};
 let cv,ctx,W=300,H=400;
 
@@ -251,7 +299,7 @@ function hud(){$('hs').textContent=G.score;$('hc').textContent='🪙 '+S.coins;$
 
 function startRound(){
   cancelAnimationFrame(G.raf);
-  Object.assign(G,{state:'ready',th:0,score:0,earned:0,newRec:false,air:false,jt:0,h:0,wait:0,
+  Object.assign(G,{state:'ready',th:0,score:0,earned:0,newRec:false,air:false,jt:0,h:0,wait:0,slowJumps:0,jn:0,prevBest:S.best,
     slowT:0,autoOn:false,autoLeft:0,pops:[],paused:false,overT:0,on:true});
   $('over').style.display='none';
   setMsg('Toque na tela para começar');
@@ -266,13 +314,13 @@ function endEffect(k){
 }
 function useSlow(){
   if(!S.slow||G.state!=='play'||G.slowT>0||Date.now()<S.cd.slow)return;
-  G.slowT=CFG.slowDur;
+  G.slowT=CFG.slowDur;G.slowJumps=0;
 }
 function useAuto(){
   if(!S.auto||G.state!=='play'||G.autoOn||Date.now()<S.cd.auto)return;
   G.autoOn=true;G.autoLeft=CFG.autoJumps;
 }
-function jump(){if(!G.air){G.air=true;G.jt=0}}
+function jump(){if(!G.air){G.air=true;G.jt=0;G.jn++}}
 function tap(){
   if(!G.on||G.state==='over')return;
   if(G.paused){G.paused=false;setMsg('');return}
@@ -291,7 +339,9 @@ function cross(k){
     if(G.score>S.best){S.best=G.score;G.newRec=true}
     G.pops.push({t:0,txt:'+'+rw});
     sfx.jump(G.score);
-    if(G.autoOn&&G.autoLeft===0)endEffect('auto');
+    if(G.slowT>0&&++G.slowJumps>=10)unlock('slow10');
+    if(G.autoOn&&G.autoLeft===0){unlock('auto15');endEffect('auto')}
+    checkStyles();checkAch();
     save();hud();
   }else{
     G.th=PI2*k-Math.PI;            // corda parada embaixo, nos pés
@@ -303,9 +353,20 @@ function finish(quit){
   G.state='over';
   if(G.slowT>0)endEffect('slow');
   if(G.autoOn)endEffect('auto');
-  S.rounds++;save();hud();
+  S.rounds++;if(G.newRec&&G.prevBest>0)S.recBreaks++;checkAch();save();hud();
   if(!quit){sfx.fail();G.overT=.45}
 }
+const NQ=[];let nBusy=false;
+function notify(m){NQ.push(m);if(!nBusy)nextN()}
+function nextN(){const m=NQ.shift(),e=$('nt');if(!m){nBusy=false;e.style.display='none';return}
+  nBusy=true;e.textContent=m;e.style.display='block';setTimeout(nextN,2400)}
+function unlock(id){
+  if(S.ach[id])return;
+  const a=ACH.find(x=>x.id===id);if(!a)return;
+  S.ach[id]=1;save();sfx.buy();notify('🏆 Conquista: '+a.name);
+}
+function checkAch(){ACH.forEach(a=>{if(a.val&&!S.ach[a.id]&&a.val(S)>=a.goal)unlock(a.id)})}
+function checkStyles(){STYLES.forEach(x=>{if(x.at>0&&S.total>=x.at&&!S.styles[x.id]){S.styles[x.id]=1;notify('🆕 Novo estilo de pulo: '+x.name+' (em Config.)')}})}
 function claimable(){return CHALLENGES.some(c=>!S.done[c.id]&&c.val(S)>=c.goal)}
 function showOver(){
   $('ovScore').textContent=G.score;
@@ -345,7 +406,9 @@ function draw(){
   c.globalAlpha=1;c.fillRect(0,gy,W,2);
   // personagem
   const sk=SKINS[S.skin]||SKINS.default;
-  (sk.draw||SKINS.default.draw)(c,px,gy-G.h*s*1.6,s,sk);
+  const fy=gy-G.h*s*1.6,st=STYLES.find(x=>x.id===S.style)||STYLES[0],dr=sk.draw||SKINS.default.draw;
+  if(G.air&&st.fx){c.save();c.translate(px,fy-s/2);st.fx(c,G.jt,G.jn,s);c.translate(-px,-(fy-s/2));dr(c,px,fy,s,sk);c.restore()}
+  else dr(c,px,fy,s,sk);
   // corda
   const hy=gy-s*.5,hx=s*1.1,cs=Math.cos(G.th);
   const ym=hy-(cs>0?s*2.4:s*.5)*cs;
@@ -414,7 +477,7 @@ function buy(k){
     });
     return;
   }else return;
-  save();sfx.buy();renderShop();
+  checkAch();save();sfx.buy();renderShop();
 }
 function renderChal(){
   $('chalCoins').textContent='🪙 '+S.coins;
@@ -427,10 +490,19 @@ function renderChal(){
 function claim(id){
   const c=CHALLENGES.find(x=>x.id===id);
   if(!c||S.done[id]||c.val(S)<c.goal)return;
-  S.done[id]=1;S.coins+=c.reward;save();sfx.buy();renderChal();toast('🏅 '+c.name+': +'+c.reward+' moedas');
+  S.done[id]=1;S.coins+=c.reward;checkAch();save();sfx.buy();renderChal();toast('🏅 '+c.name+': +'+c.reward+' moedas');
 }
 const COLORS=['#1b2a41','#0f766e','#4c1d95','#7f1d1d','#14532d','#fef3c7','#e0f2fe','#f5f5f4'];
+function renderAch(){
+  $('achCount').textContent=Object.keys(S.ach).length+'/'+ACH.length;
+  $('achList').innerHTML=['Iniciantes','Intermediárias','Especiais'].map(cat=>'<h3>'+cat+'</h3>'+ACH.filter(a=>a.cat===cat).map(a=>{
+    const ok=S.ach[a.id],pr=!ok&&a.val?' · '+Math.min(a.val(S),a.goal)+'/'+a.goal:'';
+    return '<div class="card"'+(ok?'':' style="opacity:.75"')+'><div style="font-size:1.6rem">'+(ok?'🏅':'🔒')+'</div><div class="t"><b>'+a.name+'</b><small>'+a.desc+pr+'</small></div></div>';
+  }).join('')).join('');
+}
 function renderSet(){
+  $('styleList').innerHTML=STYLES.map(x=>{const ok=S.total>=x.at;
+    return '<button class="stb'+(x.id===S.style?' sel':'')+'"'+(ok?' data-style="'+x.id+'"':' disabled')+'>'+x.name+'<small>'+(ok?(x.id===S.style?'Em uso':'Toque para usar'):'🔒 '+x.at+' pulos no total (você tem '+S.total+')')+'</small></button>'}).join('');
   $('sndBtn').textContent=S.sound?'🔊 Ligado':'🔇 Desligado';
   $('swatches').innerHTML=COLORS.map(c=>'<button data-bg="'+c+'" style="background:'+c+(c===S.bg?';border-color:var(--ac)':'')+'" aria-label="'+c+'"></button>').join('');
   $('skinList').innerHTML=Object.values(SKINS).map(k=>'<button data-skin="'+k.id+'" title="'+k.name+'" style="'+(k.img?'':'background:'+k.color+';')+(k.id===S.skin?'border-color:var(--ac)':'')+'">'+(k.img?'<img src="'+k.img.src+'" alt="">':'')+'</button>').join('');
@@ -442,7 +514,7 @@ function setBg(c){S.bg=c;applyTheme();save();renderSet()}
 function go(id){
   G.on=false;cancelAnimationFrame(G.raf);
   document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id));
-  ({menu:renderMenu,shop:renderShop,chal:renderChal,set:renderSet,game:startRound})[id]();
+  ({menu:renderMenu,shop:renderShop,chal:renderChal,ach:renderAch,set:renderSet,game:startRound})[id]();
 }
 
 /* ===== Eventos ===== */
@@ -453,6 +525,7 @@ document.addEventListener('click',e=>{
   else if(b.dataset.claim)claim(b.dataset.claim);
   else if(b.dataset.bg)setBg(b.dataset.bg);
   else if(b.dataset.skin){S.skin=b.dataset.skin;save();renderSet()}
+  else if(b.dataset.style){const x=STYLES.find(y=>y.id===b.dataset.style);if(x&&S.total>=x.at){S.style=x.id;save();renderSet()}}
 });
 $('again').onclick=startRound;
 $('bSlow').onclick=useSlow;
