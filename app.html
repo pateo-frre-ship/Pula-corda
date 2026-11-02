@@ -35,18 +35,18 @@ h2{margin:0;font-size:1.3rem;flex:1}
 #menu .row{display:flex;gap:8px;justify-content:center}
 #menu .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 #play{font-size:1.5rem;padding:18px}
-#game{padding:0;gap:0}
-#hud{display:flex;justify-content:space-between;align-items:center;padding:max(env(safe-area-inset-top),8px) 14px 4px;font-weight:700}
-#hs{font-size:2.6rem;line-height:1}
-#cw{position:relative;flex:1;min-height:0}
-#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
-#msg{position:absolute;inset:0;display:flex;justify-content:center;padding:10% 20px 0;font-size:1.2rem;font-weight:700;text-align:center;pointer-events:none}
-#over{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.55);color:#fff;text-align:center}
-#over button{width:220px}
+#game,#box{padding:0;gap:0}
+#hud,#bhud{display:flex;justify-content:space-between;align-items:center;padding:max(env(safe-area-inset-top),8px) 14px 4px;font-weight:700}
+#hs,#bn{font-size:2.6rem;line-height:1}
+#cw,#bcw{position:relative;flex:1;min-height:0}
+#cv,#bv{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+#msg,#bmsg{position:absolute;inset:0;display:flex;justify-content:center;padding:10% 20px 0;font-size:1.2rem;font-weight:700;text-align:center;pointer-events:none}
+#over,#bover{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:rgba(0,0,0,.55);color:#fff;text-align:center}
+#over button,#bover button{width:220px}
 #ovScore{font-size:4rem;font-weight:800;line-height:1}
-#abs{display:flex;gap:8px;padding:8px 12px max(env(safe-area-inset-bottom),10px)}
-#abs button{flex:1;min-height:60px;padding:6px;line-height:1.25}
-#abs button small{display:block;opacity:.85;font-size:.75rem}
+#abs,#bbar{display:flex;gap:8px;padding:8px 12px max(env(safe-area-inset-bottom),10px)}
+#abs button,#bbar button{flex:1;min-height:60px;padding:6px;line-height:1.25}
+#abs button small,#bbar button small{display:block;opacity:.85;font-size:.75rem}
 #abs button.rdy{background:var(--ac);color:#fff}
 #abs button.act{outline:3px solid var(--ac)}
 #abs #bQuit{flex:0 0 54px}
@@ -62,6 +62,8 @@ h2{margin:0;font-size:1.3rem;flex:1}
 h3{margin:8px 0 0;font-size:1rem;opacity:.85}
 .stb{display:block;width:100%;text-align:left}.stb small{display:block;opacity:.8;margin-top:2px}.stb.sel{outline:3px solid var(--ac)}
 #nt{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);background:#000d;color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:11;max-width:92%;text-align:center;pointer-events:none}
+.big{font-size:3rem;font-weight:800;line-height:1}
+#bbar button{min-height:64px;font-weight:700}#bbar #bbQuit{flex:0 0 54px}
 @media (max-height:520px){h1{font-size:1.6rem}#play{padding:10px}#hs{font-size:2rem}}
 </style>
 </head>
@@ -71,6 +73,7 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
   <h1>🪢 Pula Corda</h1>
   <div class="row"><span class="chip" id="mCoins"></span><span class="chip" id="mBest"></span></div>
   <button class="pri" id="play" data-go="game">▶ Jogar</button>
+  <button class="pri" data-go="box" style="font-size:1.3rem;padding:14px">🥊 Boxe</button>
   <div class="grid">
     <button data-go="shop">🛒<br>Loja</button>
     <button data-go="chal">🎯<br>Desafios</button>
@@ -99,6 +102,23 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
   </div>
 </section>
 
+<section id="box" class="scr">
+  <div id="bhud"><span id="bt"></span><b id="bn">0</b><span id="bc"></span></div>
+  <div id="bcw"><canvas id="bv"></canvas><div id="bmsg"></div><div id="bover"></div></div>
+  <div id="bbar">
+    <button data-mv="jab">👊<small>Jab</small></button>
+    <button data-mv="direto">➡️<small>Direto</small></button>
+    <button data-mv="cruzado">↪️<small>Cruzado</small></button>
+    <button data-mv="gancho">⤴️<small>Gancho</small></button>
+    <button id="bbQuit" aria-label="Sair">✕</button>
+  </div>
+</section>
+
+<section id="bshop" class="scr">
+  <div class="top"><button data-go="shop">←</button><h2>Equipamentos</h2><span class="chip" id="bsCoins"></span></div>
+  <div class="col" id="bsList"></div>
+</section>
+
 <section id="shop" class="scr">
   <div class="top"><button data-go="menu">←</button><h2>Loja</h2><span class="chip" id="shopCoins"></span></div>
   <div class="col" id="shopList"></div>
@@ -121,12 +141,12 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
     <div class="card" style="flex-direction:column;align-items:stretch">
       <div>Cor do fundo</div>
       <div class="sw" id="swatches"></div>
-      <label>Outra cor: <input type="color" id="bgIn"></label>
+      <button id="bgPick"></button><input type="color" id="bgIn" hidden>
     </div>
     <div class="card" style="flex-direction:column;align-items:stretch">
       <div>Skin do personagem</div>
       <div class="sw sk" id="skinList"></div>
-      <button id="skinAdd">🖼️ Adicionar skin (imagem)</button>
+      <button id="skinAdd">🖼️ Adicionar skin (imagem) — 🪙 1000</button>
       <button id="skinDel" style="display:none">🗑️ Remover skin atual</button>
       <input type="file" id="skinIn" accept="image/*" hidden>
     </div>
@@ -146,24 +166,24 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
 /* ===== Configuração (ajuste aqui o equilíbrio do jogo) ===== */
 const CFG={
   baseCoins:30, coinStep:10,          // moedas por pulo: 30 + 10 por nível
-  lvlCost:60, maxLvl:5,               // melhoria de velocidade
+  lvlCosts:[3000,6000,11000,17000,28000], maxLvl:5,               // melhoria de velocidade
   baseRps:.85, rpsStep:.1,            // voltas da corda por segundo (nível 0 → 5: .85 → 1.35)
-  slowCost:270, slowDur:30, slowCd:60, slowMult:.62,   // Slow: corda a 62% da velocidade
-  autoCost:150, autoJumps:15, autoCd:40,
-  resetFee:500,
+  slowCost:8000, slowDur:30, slowCd:60, slowMult:.62,   // Slow: corda a 62% da velocidade
+  autoCost:5000, autoJumps:15, autoCd:40,
+  resetFee:4000,
   jumpDur:.5,                         // duração de um pulo (s)
   clear:.4                            // altura mínima (fração do pulo máximo) para livrar a corda
 };
 
 /* ===== Desafios: para criar novos, basta adicionar uma linha ===== */
 const CHALLENGES=[
-  {id:'r10', name:'Aquecimento',   desc:'10 pulos em uma rodada',  goal:10,   reward:50,  val:s=>s.best},
-  {id:'r20', name:'Pegando ritmo', desc:'20 pulos em uma rodada',  goal:20,   reward:100, val:s=>s.best},
-  {id:'r50', name:'Sem tropeçar',  desc:'50 pulos em uma rodada',  goal:50,   reward:200, val:s=>s.best},
-  {id:'r100',name:'Mestre da corda',desc:'100 pulos em uma rodada',goal:100,  reward:400, val:s=>s.best},
-  {id:'t500',name:'Maratona',      desc:'500 pulos no total',      goal:500,  reward:300, val:s=>s.total},
-  {id:'t2000',name:'Lenda',        desc:'2000 pulos no total',     goal:2000, reward:800, val:s=>s.total},
-  {id:'p10', name:'Persistente',   desc:'Jogar 10 rodadas',        goal:10,   reward:100, val:s=>s.rounds}
+  {id:'r10', name:'Aquecimento',   desc:'10 pulos em uma rodada',  goal:10,   reward:300,  val:s=>s.best},
+  {id:'r20', name:'Pegando ritmo', desc:'20 pulos em uma rodada',  goal:20,   reward:600, val:s=>s.best},
+  {id:'r50', name:'Sem tropeçar',  desc:'50 pulos em uma rodada',  goal:50,   reward:1500, val:s=>s.best},
+  {id:'r100',name:'Mestre da corda',desc:'100 pulos em uma rodada',goal:100,  reward:3000, val:s=>s.best},
+  {id:'t500',name:'Maratona',      desc:'500 pulos no total',      goal:500,  reward:2000, val:s=>s.total},
+  {id:'t2000',name:'Lenda',        desc:'2000 pulos no total',     goal:2000, reward:5000, val:s=>s.total},
+  {id:'p10', name:'Persistente',   desc:'Jogar 10 rodadas',        goal:10,   reward:800, val:s=>s.rounds}
 ];
 
 /* ===== Skins: o personagem é desenhado por uma skin.
@@ -219,9 +239,30 @@ const ACH=[
   {id:'mestre',      cat:'Especiais',      name:'Mestre da corda',   desc:'Acumular 500 pulos no total',        goal:500, val:s=>s.total}
 ];
 
+/* ===== Preços de personalização (skins e fundos; estilos de pulo desbloqueiam por pulos) ===== */
+const SKINP={azul:400,verde:400,rosa:400,roxo:600,branco:600,ouro:2500},IMGP=1000,BGP=300,PICKP=1500;
+const BGS=['#1b2a41','#0f766e','#4c1d95','#7f1d1d','#14532d','#fef3c7','#e0f2fe','#f5f5f4'];
+
+/* ===== Boxe: tudo custa moedas, exceto o equipamento inicial (preço 0).
+   gl/bag: [id,nome,cor,preço(,padrão])  fx/sp: [id,nome,preço] ===== */
+const BX={time:30,gap:.2,base:[8,9,10,12,14,16],pcost:[2500,5000,9000,15000,24000],
+  gl:[['vermelha','Luva vermelha','#dc2626',0],['azul','Luva azul','#2563eb',500],['verde','Luva verde','#16a34a',500],['amarela','Luva amarela','#facc15',900],['preta','Luva preta','#3f3f46',1200],['rosa','Luva rosa','#ec4899',1500],['dourada','Luva dourada','#eab308',4000]],
+  bag:[['lona','Saco de lona','#8b5a2b',0,''],['azul','Saco azul','#2563eb',700,''],['vermelho','Saco vermelho','#dc2626',700,''],['listrado','Saco listrado','#16a34a',1500,'s'],['estrelas','Saco estrelado','#7c3aed',2500,'*'],['ouro','Saco dourado','#eab308',5000,'g']],
+  fx:[['simples','Impacto simples',0],['faiscas','Faíscas',1000],['estrelas','Estrelas',2000],['chamas','Chamas',3500]],
+  sp:[['nenhuma','Sem animação especial',0],['tremor','Tremor de tela',1500],['giro','Saco giratório nos combos',3000]]};
+const BCAT={gl:'Luvas',bag:'Sacos de pancada',fx:'Efeitos dos golpes',sp:'Animações especiais'};
+const MOVES={jab:{i:1.5,u:0},direto:{i:2.6,u:0},cruzado:{i:3.2,u:.15},gancho:{i:2.3,u:1}};
+// combos: sequência de golpes (até 0,9 s entre eles) + moedas de bônus. Para criar outro, adicione uma linha.
+const COMBOS=[
+  {n:'1-2-3',s:['jab','direto','cruzado'],b:10},{n:'1-1-2',s:['jab','jab','direto'],b:8},
+  {n:'Gancho final',s:['jab','cruzado','gancho'],b:12},{n:'Cruzada dupla',s:['cruzado','cruzado','gancho'],b:12},
+  {n:'Chuva',s:['jab','jab','jab','jab'],b:8}
+].sort((a,b)=>b.s.length-a.s.length);
+
 /* ===== Salvamento ===== */
 const KEY='puloCorda_v1';
-const DEF={coins:0,best:0,total:0,rounds:0,lvl:0,slow:false,auto:false,done:{},sound:true,bg:'#1b2a41',skin:'default',custom:[],ach:{},style:'basico',styles:{},recBreaks:0};
+const DEF={coins:0,best:0,total:0,rounds:0,lvl:0,slow:false,auto:false,done:{},sound:true,bg:'#1b2a41',skin:'default',custom:[],ach:{},style:'basico',styles:{},recBreaks:0,
+  own:{},bxBest:0,bxTotal:0,bxPow:0,bxOwn:{},bxEq:{gl:'vermelha',bag:'lona',fx:'simples',sp:'nenhuma'}};
 function load(){
   let o={};try{o=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
   const s=Object.assign({},DEF,o);
@@ -231,6 +272,11 @@ function load(){
   s.lvl=Math.min(CFG.maxLvl,s.lvl|0);
   s.ach=Object.assign({},o.ach);s.styles=Object.assign({},o.styles);s.recBreaks=Math.max(0,Number(s.recBreaks)||0);
   if(!STYLES.some(x=>x.id===s.style&&s.total>=x.at))s.style='basico';
+  s.bxEq=Object.assign({gl:'vermelha',bag:'lona',fx:'simples',sp:'nenhuma'},o.bxEq);s.bxOwn=Object.assign({},o.bxOwn);
+  s.bxBest=Math.max(0,Number(s.bxBest)||0);s.bxTotal=Math.max(0,Number(s.bxTotal)||0);s.bxPow=Math.min(BX.pcost.length,Math.max(0,Number(s.bxPow)|0));
+  s.own=Object.assign({},o.own);                      // itens comprados; quem já usava algo antes mantém
+  if(!o.own){s.own['skin:'+s.skin]=1;s.own['bg:'+s.bg]=1;s.custom.forEach(c=>s.own['skin:'+c.id]=1);if(BGS.indexOf(s.bg)<0)s.own.picker=1}
+  s.own['skin:default']=1;s.own['bg:#1b2a41']=1;
   const n=Date.now();
   if(s.cd.slow>n+CFG.slowCd*1000)s.cd.slow=0;
   if(s.cd.auto>n+CFG.autoCd*1000)s.cd.auto=0;
@@ -280,7 +326,8 @@ function beep(f,d,type,v,t0){
 const sfx={
   jump:n=>beep(520+(n%8)*45,.09,'square',.06),
   buy:()=>{beep(520,.1,'triangle',.12);beep(780,.16,'triangle',.12,.09)},
-  fail:()=>beep(110,.35,'sawtooth',.1)
+  fail:()=>beep(110,.35,'sawtooth',.1),
+  punch:()=>beep(110+Math.random()*50,.07,'sawtooth',.09)
 };
 
 /* ===== Estado da partida ===== */
@@ -450,22 +497,23 @@ function renderMenu(){$('mCoins').textContent='🪙 '+S.coins;$('mBest').textCon
 function shopCard(icon,name,desc,btn,dis,key,extra){
   return '<div class="card"><div style="font-size:1.8rem">'+icon+'</div><div class="t"><b>'+name+'</b><small>'+desc+'</small>'+(extra||'')+'</div><button class="pri" data-buy="'+key+'"'+(dis?' disabled':'')+'>'+btn+'</button></div>';
 }
-function refund(){return S.lvl*CFG.lvlCost+(S.slow?CFG.slowCost:0)+(S.auto?CFG.autoCost:0)}
+function refund(){return CFG.lvlCosts.slice(0,S.lvl).reduce((a,b)=>a+b,0)+(S.slow?CFG.slowCost:0)+(S.auto?CFG.autoCost:0)}
 function renderShop(){
   $('shopCoins').textContent='🪙 '+S.coins;
   const L=S.lvl,max=L>=CFG.maxLvl;
   $('shopList').innerHTML=
     shopCard('⚡','Velocidade '+L+'/'+CFG.maxLvl,'Corda mais rápida. Moedas por pulo: '+reward()+(max?'':' → '+(reward()+CFG.coinStep)),
-      max?'Máximo':'🪙 '+CFG.lvlCost,max||S.coins<CFG.lvlCost,'lvl')+
+      max?'Máximo':'🪙 '+CFG.lvlCosts[L],max||S.coins<CFG.lvlCosts[L],'lvl')+
     shopCard('🐢','Slow','Corda mais lenta por '+CFG.slowDur+'s. Recarga '+CFG.slowCd+'s. Moedas por pulo não mudam.',
       S.slow?'Comprado':'🪙 '+CFG.slowCost,S.slow||S.coins<CFG.slowCost,'slow')+
     shopCard('🤖','Auto-jump',CFG.autoJumps+' pulos automáticos. Recarga '+CFG.autoCd+'s.',
       S.auto?'Comprado':'🪙 '+CFG.autoCost,S.auto||S.coins<CFG.autoCost,'auto')+
     shopCard('♻️','Reiniciar habilidades','Devolve '+refund()+' 🪙 gastas. Taxa: '+CFG.resetFee+' 🪙 (não devolvida).',
-      '🪙 '+CFG.resetFee,refund()===0||S.coins<CFG.resetFee,'reset');
+      '🪙 '+CFG.resetFee,refund()===0||S.coins<CFG.resetFee,'reset')+
+    '<div class="card"><div style="font-size:1.8rem">🥊</div><div class="t"><b>Loja do boxe</b><small>Luvas, sacos, efeitos e força do soco</small></div><button class="pri" data-go="bshop">Abrir</button></div>';
 }
 function buy(k){
-  if(k==='lvl'&&S.lvl<CFG.maxLvl&&S.coins>=CFG.lvlCost){S.coins-=CFG.lvlCost;S.lvl++}
+  if(k==='lvl'&&S.lvl<CFG.maxLvl&&S.coins>=CFG.lvlCosts[S.lvl]){S.coins-=CFG.lvlCosts[S.lvl];S.lvl++}
   else if(k==='slow'&&!S.slow&&S.coins>=CFG.slowCost){S.coins-=CFG.slowCost;S.slow=true}
   else if(k==='auto'&&!S.auto&&S.coins>=CFG.autoCost){S.coins-=CFG.autoCost;S.auto=true}
   else if(k==='reset'){
@@ -492,7 +540,7 @@ function claim(id){
   if(!c||S.done[id]||c.val(S)<c.goal)return;
   S.done[id]=1;S.coins+=c.reward;checkAch();save();sfx.buy();renderChal();toast('🏅 '+c.name+': +'+c.reward+' moedas');
 }
-const COLORS=['#1b2a41','#0f766e','#4c1d95','#7f1d1d','#14532d','#fef3c7','#e0f2fe','#f5f5f4'];
+const COLORS=BGS;
 function renderAch(){
   $('achCount').textContent=Object.keys(S.ach).length+'/'+ACH.length;
   $('achList').innerHTML=['Iniciantes','Intermediárias','Especiais'].map(cat=>'<h3>'+cat+'</h3>'+ACH.filter(a=>a.cat===cat).map(a=>{
@@ -501,21 +549,151 @@ function renderAch(){
   }).join('')).join('');
 }
 function renderSet(){
+  $('bgPick').textContent=S.own.picker?'🎨 Escolher outra cor':'🔒 Cor livre — 🪙 '+PICKP;
   $('styleList').innerHTML=STYLES.map(x=>{const ok=S.total>=x.at;
     return '<button class="stb'+(x.id===S.style?' sel':'')+'"'+(ok?' data-style="'+x.id+'"':' disabled')+'>'+x.name+'<small>'+(ok?(x.id===S.style?'Em uso':'Toque para usar'):'🔒 '+x.at+' pulos no total (você tem '+S.total+')')+'</small></button>'}).join('');
   $('sndBtn').textContent=S.sound?'🔊 Ligado':'🔇 Desligado';
-  $('swatches').innerHTML=COLORS.map(c=>'<button data-bg="'+c+'" style="background:'+c+(c===S.bg?';border-color:var(--ac)':'')+'" aria-label="'+c+'"></button>').join('');
-  $('skinList').innerHTML=Object.values(SKINS).map(k=>'<button data-skin="'+k.id+'" title="'+k.name+'" style="'+(k.img?'':'background:'+k.color+';')+(k.id===S.skin?'border-color:var(--ac)':'')+'">'+(k.img?'<img src="'+k.img.src+'" alt="">':'')+'</button>').join('');
+  $('swatches').innerHTML=COLORS.map(c=>'<button data-bg="'+c+'" style="background:'+c+(c===S.bg?';border-color:var(--ac)':'')+'" aria-label="'+c+'" title="'+(S.own['bg:'+c]?'':BGP+' moedas')+'">'+(S.own['bg:'+c]?'':'🔒')+'</button>').join('');
+  $('skinList').innerHTML=Object.values(SKINS).map(k=>'<button data-skin="'+k.id+'" title="'+k.name+(S.own['skin:'+k.id]?'':' — '+SKINP[k.id]+' moedas')+'" style="'+(k.img?'':'background:'+k.color+';')+(k.id===S.skin?'border-color:var(--ac)':'')+'">'+(k.img?'<img src="'+k.img.src+'" alt="">':'')+(S.own['skin:'+k.id]?'':'🔒')+'</button>').join('');
   $('skinDel').style.display=SKINS[S.skin]&&SKINS[S.skin].custom?'block':'none';
   $('bgIn').value=/^#[0-9a-f]{6}$/i.test(S.bg)?S.bg:'#1b2a41';
 }
 function setBg(c){S.bg=c;applyTheme();save();renderSet()}
 
 function go(id){
-  G.on=false;cancelAnimationFrame(G.raf);
+  if(B.on&&B.state==='play')endBox(true);
+  B.on=false;cancelAnimationFrame(B.raf);G.on=false;cancelAnimationFrame(G.raf);
   document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id===id));
-  ({menu:renderMenu,shop:renderShop,chal:renderChal,ach:renderAch,set:renderSet,game:startRound})[id]();
+  ({menu:renderMenu,shop:renderShop,chal:renderChal,ach:renderAch,set:renderSet,game:startRound,box:startBox,bshop:renderBshop})[id]();
 }
+
+function purchase(key,price,what,after){
+  if(S.coins<price){toast('Faltam '+(price-S.coins)+' moedas');return}
+  ask('Comprar '+what+' por '+price+' moedas?',()=>{if(S.coins<price)return;S.coins-=price;S.own[key]=1;save();sfx.buy();after()});
+}
+function skinPick(id){
+  if(!SKINS[id])return;
+  if(S.own['skin:'+id]){S.skin=id;save();renderSet()}
+  else purchase('skin:'+id,SKINP[id]||9999,'esta skin',()=>{S.skin=id;save();renderSet()});
+}
+function bgPickC(c){if(S.own['bg:'+c])setBg(c);else purchase('bg:'+c,BGP,'esta cor de fundo',()=>setBg(c))}
+
+/* ===== Modo boxe ===== */
+const B={on:false,state:'ready',t:0,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,an:[],fx:[],pops:[],newRec:false,raf:0,last:0};
+let bcv,bctx,BW=300,BH=400;
+const bxPrice=(c,it)=>c==='fx'||c==='sp'?it[2]:it[3];
+const bxOwn=(c,it)=>bxPrice(c,it)===0||!!S.bxOwn[c+':'+it[0]];
+const bxEq=c=>BX[c].find(x=>x[0]===S.bxEq[c])||BX[c][0];
+const bxCoins=()=>BX.base[S.bxPow];
+function bres(){const r=bcv.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);BW=r.width||300;BH=r.height||400;bcv.width=Math.round(BW*d);bcv.height=Math.round(BH*d);bctx.setTransform(d,0,0,d,0,0)}
+function bgeo(){return{x:BW*.66,py:BH*.04,y:BH*.17,w:BH*.11,h:BH*.34}}
+function bhud(){$('bt').textContent='⏱ '+Math.max(0,Math.ceil(B.t));$('bn').textContent=B.n;$('bc').textContent='🪙 '+S.coins}
+function startBox(){
+  cancelAnimationFrame(B.raf);
+  Object.assign(B,{on:true,state:'ready',t:BX.time,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,an:[],fx:[],pops:[],newRec:false});
+  $('bover').style.display='none';
+  $('bmsg').textContent='Escolha um golpe para começar o treino de '+BX.time+' segundos. Recorde: '+S.bxBest+' socos';$('bmsg').style.display='flex';
+  bres();bhud();B.last=performance.now();B.raf=requestAnimationFrame(bloop);
+}
+function punch(k){
+  if(!B.on||B.state==='over'||!MOVES[k])return;
+  const now=performance.now();
+  if(now-B.lastP<BX.gap*1000)return;               // limite de velocidade dos socos
+  if(B.state==='ready'){B.state='play';$('bmsg').style.display='none'}
+  if(now-B.lastP>900)B.hist=[];
+  B.lastP=now;
+  const c=bxCoins();S.coins+=c;S.bxTotal++;B.n++;B.earned+=c;
+  B.an.push({k,t:0,h:(k==='jab'||k==='gancho')?0:1,hit:false});
+  B.hist.push(k);if(B.hist.length>4)B.hist.shift();
+  const cb=COMBOS.find(x=>x.s.length<=B.hist.length&&x.s.every((m,i)=>B.hist[B.hist.length-x.s.length+i]===m));
+  if(cb){S.coins+=cb.b;B.earned+=cb.b;B.combos++;B.hist=[];B.pops.push({t:0,txt:'COMBO '+cb.n+' +'+cb.b,big:1});
+    if(S.bxEq.sp==='giro')B.spin=1;sfx.buy()}
+  else B.pops.push({t:0,txt:'+'+c});
+  if(B.n%10===0)save();
+  bhud();
+}
+function impact(k){
+  const m=MOVES[k],g=bgeo(),e=S.bxEq.fx,x=g.x-g.w/2,y=g.y+g.h*(k==='gancho'?.8:.45);
+  B.w+=m.i;B.vy-=m.u*170;B.sq=1;sfx.punch();
+  if(S.bxEq.sp==='tremor')B.shake=.25;
+  B.fx.push({k:'ring',x,y,t:0,l:.3,vx:0,vy:0});
+  const n=e==='faiscas'?10:e==='estrelas'?6:e==='chamas'?8:0;
+  for(let i=0;i<n;i++)B.fx.push({k:e,x,y,t:0,l:.5,vx:e==='chamas'?-Math.random()*60:-(40+Math.random()*160),vy:e==='chamas'?-60-Math.random()*120:(Math.random()-.5)*240});
+}
+function bupdate(dt){
+  B.pops.forEach(p=>p.t+=dt);B.pops=B.pops.filter(p=>p.t<.9).slice(-5);
+  B.fx.forEach(f=>{f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt});B.fx=B.fx.filter(f=>f.t<f.l);
+  B.an.forEach(a=>{a.t+=dt;if(!a.hit&&a.t>=.07){a.hit=true;impact(a.k)}});B.an=B.an.filter(a=>a.t<.26);
+  B.w+=(-30*Math.sin(B.a)-2.2*B.w)*dt;B.w=Math.max(-7,Math.min(7,B.w));B.a+=B.w*dt;   // saco como pêndulo
+  if(Math.abs(B.a)>1.1){B.a=Math.sign(B.a)*1.1;B.w*=-.3}        // limite de balanço
+  B.vy+=(-90*B.y-7*B.vy)*dt;B.y+=B.vy*dt;                     // sobe e desce no gancho
+  B.sq=Math.max(0,B.sq-dt*6);B.spin=Math.max(0,B.spin-dt*1.4);B.shake=Math.max(0,B.shake-dt);
+  if(B.state==='play'){B.t-=dt;bhud();if(B.t<=0)endBox(false)}
+}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function bdraw(){
+  const c=bctx,g=bgeo(),s=Math.min(BW,BH)*.16,gy=BH*.84,bx=BW*.24;
+  c.clearRect(0,0,BW,BH);c.save();
+  if(B.shake>0)c.translate((Math.random()-.5)*B.shake*36,(Math.random()-.5)*B.shake*36);
+  c.fillStyle=FG;c.globalAlpha=.16;c.fillRect(0,gy,BW,BH-gy);c.globalAlpha=1;c.fillRect(0,gy,BW,2);
+  const sk=SKINS[S.skin]||SKINS.default;(sk.draw||SKINS.default.draw)(c,bx,gy,s,sk);
+  const gl=bxEq('gl')[2];
+  for(let h=0;h<2;h++){
+    const a=B.an.filter(q=>q.h===h).pop(),sx=bx+s*.4,sy=gy-s*(.72-.12*h);
+    let gx=sx+s*.45,gyy=sy+s*.1;
+    if(a){const p=a.t/.26,ext=p<.3?p/.3:1-(p-.3)/.7,tx=g.x-g.w/2-s*.25,ty=g.y+g.h*(a.k==='gancho'?.8:.45);
+      gx+=(tx-gx)*ext;gyy+=(ty-gyy)*ext;
+      if(a.k==='cruzado')gyy-=Math.sin(ext*Math.PI)*s*.7;
+      if(a.k==='gancho')gyy+=(1-ext)*s*.9}
+    c.strokeStyle=sk.color;c.lineWidth=s*.16;c.lineCap='round';c.beginPath();c.moveTo(sx,sy);c.lineTo(gx,gyy);c.stroke();
+    c.fillStyle=gl;c.beginPath();c.arc(gx,gyy,s*.3,0,PI2);c.fill();c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.stroke();
+  }
+  const bg=bxEq('bag'),w=g.w,h=g.h;
+  c.save();c.translate(g.x,g.py);c.rotate(B.a);
+  c.strokeStyle=FG;c.lineWidth=3;c.beginPath();c.moveTo(0,0);c.lineTo(0,g.y-g.py+B.y);c.stroke();
+  c.translate(0,g.y-g.py+B.y+h/2);
+  c.scale((1-.15*B.sq)*(B.spin>0?Math.cos((1-B.spin)*PI2*2):1),1+.05*B.sq);
+  c.fillStyle=bg[2];rr(c,-w/2,-h/2,w,h,w*.28);c.fill();
+  c.fillStyle='rgba(0,0,0,.22)';c.fillRect(-w/2,-h/2+h*.08,w,h*.06);c.fillRect(-w/2,h/2-h*.14,w,h*.06);
+  if(bg[4]==='s'){c.fillStyle='rgba(255,255,255,.35)';[.3,.5,.7].forEach(f=>c.fillRect(-w/2,-h/2+h*f,w,h*.05))}
+  if(bg[4]==='*'){c.fillStyle='#fde68a';c.font=Math.round(w*.35)+'px system-ui';c.textAlign='center';c.fillText('★',0,-h*.2);c.fillText('★',-w*.2,h*.05);c.fillText('★',w*.2,h*.25)}
+  c.fillStyle=bg[4]==='g'?'rgba(255,255,255,.45)':'rgba(255,255,255,.18)';c.fillRect(-w*.34,-h*.42,w*.1,h*.84);
+  c.restore();
+  B.fx.forEach(f=>{const p=f.t/f.l;c.globalAlpha=1-p;
+    if(f.k==='ring'){c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(f.x,f.y,8+p*s*.9,0,PI2);c.stroke()}
+    else if(f.k==='faiscas'){c.strokeStyle='#fde047';c.lineWidth=3;c.beginPath();c.moveTo(f.x,f.y);c.lineTo(f.x-f.vx*.05,f.y-f.vy*.05);c.stroke()}
+    else if(f.k==='estrelas'){c.fillStyle='#fde047';c.font='20px system-ui';c.textAlign='center';c.fillText('★',f.x,f.y)}
+    else{c.fillStyle=p<.5?'#f97316':'#ef4444';c.beginPath();c.arc(f.x,f.y,10*(1-p),0,PI2);c.fill()}});
+  B.pops.forEach(p=>{c.globalAlpha=Math.max(0,1-p.t/.9);c.textAlign='center';c.font='bold '+Math.round(s*(p.big?.34:.26))+'px system-ui';
+    c.fillStyle=p.big?'#ffb703':FG;c.fillText(p.txt,p.big?BW/2:g.x-g.w,p.big?BH*.1-p.t*20:g.y-p.t*40)});
+  c.globalAlpha=1;c.restore();
+}
+function bloop(t){if(!B.on)return;const dt=Math.min((t-B.last)/1000||0,.05);B.last=t;bupdate(dt);bdraw();B.raf=requestAnimationFrame(bloop)}
+function endBox(quit){
+  if(B.state==='over')return;
+  B.state='over';
+  if(B.n>S.bxBest){S.bxBest=B.n;B.newRec=true}
+  save();
+  if(quit)return;
+  $('bover').innerHTML='<h2 style="flex:none">Tempo!</h2><div class="big">'+B.n+' socos</div><div>🪙 +'+B.earned+' · 🔥 '+B.combos+' combos<br>'+(B.newRec?'🏆 Novo recorde!':'Recorde: '+S.bxBest)+'<br>Total de socos: '+S.bxTotal+'</div><button class="pri" id="bagain">Treinar de novo</button><button data-go="bshop">🛒 Equipamentos</button><button data-go="menu">Menu</button>';
+  $('bagain').onclick=startBox;$('bover').style.display='flex';
+}
+function renderBshop(){
+  $('bsCoins').textContent='🪙 '+S.coins;
+  const L=S.bxPow,mx=L>=BX.pcost.length;
+  let o='<h3>Força do soco</h3><div class="card"><div class="t"><b>Nível '+L+'/'+BX.pcost.length+'</b><small>🪙 '+bxCoins()+' por soco'+(mx?'':' → '+BX.base[L+1])+'</small></div><button class="pri" data-bxp="1"'+(mx||S.coins<BX.pcost[L]?' disabled':'')+'>'+(mx?'Máximo':'🪙 '+BX.pcost[L])+'</button></div>';
+  Object.keys(BCAT).forEach(cat=>{o+='<h3>'+BCAT[cat]+'</h3>'+BX[cat].map(it=>{
+    const id=it[0],pr=bxPrice(cat,it),own=bxOwn(cat,it),eq=S.bxEq[cat]===id;
+    const dot=(cat==='gl'||cat==='bag')?'<span style="display:inline-block;width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:8px;background:'+it[2]+'"></span>':'';
+    const btn=eq?'<button disabled>Em uso</button>':own?'<button class="pri" data-bxe="'+cat+':'+id+'">Usar</button>':'<button class="pri" data-bxb="'+cat+':'+id+'"'+(S.coins<pr?' disabled':'')+'>🪙 '+pr+'</button>';
+    return '<div class="card"><div class="t">'+dot+'<b>'+it[1]+'</b></div>'+btn+'</div>'}).join('')});
+  $('bsList').innerHTML=o;
+}
+function bxPower(){const c=BX.pcost[S.bxPow];if(c&&S.coins>=c){S.coins-=c;S.bxPow++;save();sfx.buy();renderBshop()}}
+function bxFind(a){const p=a.split(':'),it=BX[p[0]]&&BX[p[0]].find(x=>x[0]===p[1]);return it?{cat:p[0],it:it}:null}
+function bxBuy(a){const f=bxFind(a);if(!f||bxOwn(f.cat,f.it))return;const pr=bxPrice(f.cat,f.it);
+  if(S.coins<pr)return;S.coins-=pr;S.bxOwn[f.cat+':'+f.it[0]]=1;S.bxEq[f.cat]=f.it[0];save();sfx.buy();renderBshop()}
+function bxEquip(a){const f=bxFind(a);if(f&&bxOwn(f.cat,f.it)){S.bxEq[f.cat]=f.it[0];save();renderBshop()}}
 
 /* ===== Eventos ===== */
 document.addEventListener('click',e=>{
@@ -523,19 +701,23 @@ document.addEventListener('click',e=>{
   if(b.dataset.go){if(G.on&&G.state==='play')finish(true);go(b.dataset.go)}
   else if(b.dataset.buy)buy(b.dataset.buy);
   else if(b.dataset.claim)claim(b.dataset.claim);
-  else if(b.dataset.bg)setBg(b.dataset.bg);
-  else if(b.dataset.skin){S.skin=b.dataset.skin;save();renderSet()}
+  else if(b.dataset.bg)bgPickC(b.dataset.bg);
+  else if(b.dataset.skin)skinPick(b.dataset.skin);
   else if(b.dataset.style){const x=STYLES.find(y=>y.id===b.dataset.style);if(x&&S.total>=x.at){S.style=x.id;save();renderSet()}}
+  else if(b.dataset.bxp)bxPower();
+  else if(b.dataset.bxb)bxBuy(b.dataset.bxb);
+  else if(b.dataset.bxe)bxEquip(b.dataset.bxe);
 });
 $('again').onclick=startRound;
 $('bSlow').onclick=useSlow;
 $('bAuto').onclick=useAuto;
 $('bQuit').onclick=()=>{if(G.state==='play')finish(true);go('menu')};
 $('sndBtn').onclick=()=>{S.sound=!S.sound;save();renderSet();sfx.buy()};
-$('skinAdd').onclick=()=>$('skinIn').click();
+$('skinAdd').onclick=()=>{if(S.coins<IMGP){toast('Faltam '+(IMGP-S.coins)+' moedas');return}ask('Adicionar uma skin própria custa '+IMGP+' moedas. Continuar?',()=>$('skinIn').click())};
 $('skinIn').onchange=e=>{
   const f=e.target.files[0];e.target.value='';if(!f)return;
   if(S.custom.length>=10){toast('Limite de 10 skins. Remova uma antes.');return}
+  if(S.coins<IMGP){toast('Faltam '+(IMGP-S.coins)+' moedas');return}
   const u=URL.createObjectURL(f),im=new Image();
   im.onload=()=>{
     const c=document.createElement('canvas'),mx=Math.max(im.width,im.height),px=mx<=128,k=px?1:Math.min(1,256/mx);
@@ -543,7 +725,7 @@ $('skinIn').onchange=e=>{
     c.getContext('2d').drawImage(im,0,0,c.width,c.height);   // imagens até 128px são tratadas como pixel art
     URL.revokeObjectURL(u);
     const sk={id:'c'+Date.now(),name:'Skin '+(S.custom.length+1),img:c.toDataURL('image/png'),pixel:px};
-    S.custom.push(sk);regCustom(sk);S.skin=sk.id;save();renderSet();toast('Skin adicionada!');
+    S.custom.push(sk);S.coins-=IMGP;S.own['skin:'+sk.id]=1;regCustom(sk);S.skin=sk.id;save();renderSet();toast('Skin adicionada!');
   };
   im.onerror=()=>toast('Não consegui abrir essa imagem');
   im.src=u;
@@ -555,10 +737,14 @@ $('skinDel').onclick=()=>{
   });
 };
 $('bgIn').oninput=e=>setBg(e.target.value);
+$('bgPick').onclick=()=>{if(S.own.picker)$('bgIn').click();else purchase('picker',PICKP,'a cor livre',()=>{renderSet();$('bgIn').click()})};
 cv=$('cv');ctx=cv.getContext('2d');
+bcv=$('bv');bctx=bcv.getContext('2d');
+document.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();punch(b.dataset.mv)}));
+$('bbQuit').onclick=()=>{endBox(true);go('menu')};
 cv.addEventListener('pointerdown',e=>{e.preventDefault();tap()});
 document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();tap()}});
-window.addEventListener('resize',()=>{if(G.on)resize()});
+window.addEventListener('resize',()=>{if(G.on)resize();if(B.on)bres()});
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden&&G.on&&G.state==='play'){G.paused=true;setMsg('Pausado. Toque para continuar')}
 });
