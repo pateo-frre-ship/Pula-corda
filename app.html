@@ -64,6 +64,16 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
 #nt{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 70px);transform:translateX(-50%);background:#000d;color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:11;max-width:92%;text-align:center;pointer-events:none}
 .big{font-size:3rem;font-weight:800;line-height:1}
 #bbar button{min-height:64px;font-weight:700}#bbar #bbQuit{flex:0 0 54px}
+#bbar{gap:8px}
+#bbar button[data-mv]{position:relative;overflow:hidden;min-height:78px;border-radius:18px;color:#fff;font-size:1.7rem;line-height:1.1;box-shadow:0 4px 0 rgba(0,0,0,.35);transition:transform .05s,box-shadow .05s}
+#bbar button[data-mv] small{font-size:.78rem;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+#bbar button[data-mv]:active,#bbar button.hit{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35);filter:brightness(1.2)}
+#bbar button[data-mv]::after{content:"";position:absolute;left:0;bottom:0;height:5px;width:0;background:rgba(255,255,255,.85)}
+#bbar button.cd::after{animation:cdf .2s linear}
+@keyframes cdf{from{width:0}to{width:100%}}
+#bbar [data-mv=jab]{background:#2563eb}#bbar [data-mv=direto]{background:#dc2626}#bbar [data-mv=cruzado]{background:#ea580c}#bbar [data-mv=gancho]{background:#7c3aed}
+#bbar #bbQuit{min-height:78px;box-shadow:none}
+#bhint{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-weight:800;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.5)}
 @media (max-height:520px){h1{font-size:1.6rem}#play{padding:10px}#hs{font-size:2rem}}
 </style>
 </head>
@@ -104,7 +114,7 @@ h3{margin:8px 0 0;font-size:1rem;opacity:.85}
 
 <section id="box" class="scr">
   <div id="bhud"><span id="bt"></span><b id="bn">0</b><span id="bc"></span></div>
-  <div id="bcw"><canvas id="bv"></canvas><div id="bmsg"></div><div id="bover"></div></div>
+  <div id="bcw"><canvas id="bv"></canvas><div id="bmsg"></div><div id="bhint"></div><div id="bover"></div></div>
   <div id="bbar">
     <button data-mv="jab">👊<small>Jab</small></button>
     <button data-mv="direto">➡️<small>Direto</small></button>
@@ -328,7 +338,8 @@ const sfx={
   jump:n=>beep(520+(n%8)*45,.09,'square',.06),
   buy:()=>{beep(520,.1,'triangle',.12);beep(780,.16,'triangle',.12,.09)},
   fail:()=>beep(110,.35,'sawtooth',.1),
-  punch:()=>beep(110+Math.random()*50,.07,'sawtooth',.09)
+  punch:k=>{const f={jab:[520,.05,'square',.07],direto:[260,.08,'sawtooth',.1],cruzado:[190,.09,'sawtooth',.11],gancho:[95,.15,'sawtooth',.14]}[k]||[130,.07,'sawtooth',.09];
+    beep(f[0],f[1],f[2],f[3]);if(k==='gancho')beep(60,.18,'sine',.12,.02)}
 };
 
 /* ===== Estado da partida ===== */
@@ -588,7 +599,8 @@ const bxEq=c=>BX[c].find(x=>x[0]===S.bxEq[c])||BX[c][0];
 const bxCoins=()=>BX.base[S.bxPow];
 function bres(){const r=bcv.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);BW=r.width||300;BH=r.height||400;bcv.width=Math.round(BW*d);bcv.height=Math.round(BH*d);bctx.setTransform(d,0,0,d,0,0)}
 function bgeo(){return{x:BW*.66,py:BH*.04,y:BH*.17,w:BH*.11,h:BH*.34}}
-function bhud(){$('bt').textContent='⏱ '+Math.max(0,Math.ceil(B.t));$('bn').textContent=B.n;$('bc').textContent='🪙 '+S.coins}
+function bhud(){$('bt').textContent='⏱ '+Math.max(0,Math.ceil(B.t));$('bn').textContent=B.n;$('bc').textContent='🪙 '+S.coins;
+  $('bhint').textContent=(performance.now()-B.lastP<900?B.hist:[]).map(k=>({jab:'Jab',direto:'Direto',cruzado:'Cruzado',gancho:'Gancho'})[k]).join(' → ')}
 function startBox(){
   cancelAnimationFrame(B.raf);
   Object.assign(B,{on:true,state:'ready',t:BX.time,n:0,earned:0,combos:0,hist:[],lastP:0,a:0,w:0,y:0,vy:0,sq:0,spin:0,shake:0,dent:0,hy:.45,tw:0,an:[],fx:[],pops:[],newRec:false});
@@ -615,14 +627,16 @@ function punch(k){
 }
 function impact(k){
   const m=MOVES[k],g=bgeo(),e=S.bxEq.fx,hy=k==='gancho'?.8:.45,x=g.x-g.w/2,y=g.y+g.h*hy;
-  B.w+=m.i;B.vy-=m.u*170;B.sq=1;B.dent=1;B.hy=hy;if(m.tw)B.tw=1;sfx.punch();
-  if(S.bxEq.sp==='tremor')B.shake=.25;
+  B.w+=m.i;B.vy-=m.u*170;B.sq=1;B.dent=1;B.hy=hy;if(m.tw)B.tw=1;sfx.punch(k);
+  B.shake=Math.max(B.shake,S.bxEq.sp==='tremor'?.25:.08);          // tremor leve em todo impacto; forte com a animação comprada
   B.fx.push({k:'ring',x,y,t:0,l:.3,vx:0,vy:0});
+  B.fx.push({k:'flash',x,y,t:0,l:.12,vx:0,vy:0});
+  B.pops.push({t:0,txt:String(Math.round(m.i*12+Math.random()*8)),x,y,dmg:1});   // número de dano (só visual)
   const n=e==='faiscas'?10:e==='estrelas'?6:e==='chamas'?8:0;
   for(let i=0;i<n;i++)B.fx.push({k:e,x,y,t:0,l:.5,vx:e==='chamas'?-Math.random()*60:-(40+Math.random()*160),vy:e==='chamas'?-60-Math.random()*120:(Math.random()-.5)*240});
 }
 function bupdate(dt){
-  B.pops.forEach(p=>p.t+=dt);B.pops=B.pops.filter(p=>p.t<.9).slice(-5);
+  B.pops.forEach(p=>p.t+=dt);B.pops=B.pops.filter(p=>p.t<.9).slice(-8);
   B.fx.forEach(f=>{f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt});B.fx=B.fx.filter(f=>f.t<f.l);
   B.an.forEach(a=>{a.t+=dt;if(!a.hit&&a.t>=MOVES[a.k].ht){a.hit=true;impact(a.k)}});B.an=B.an.filter(a=>a.t<MOVES[a.k].d);
   B.w+=(-30*Math.sin(B.a)-2.2*B.w)*dt;B.w=Math.max(-7,Math.min(7,B.w));B.a+=B.w*dt;   // saco como pêndulo
@@ -655,9 +669,16 @@ function bdraw(){
   const c=bctx,g=bgeo(),s=Math.min(BW,BH)*.16,gy=BH*.84,bx=BW*.24,w=g.w,h=g.h,top=g.y-g.py+B.y;
   c.clearRect(0,0,BW,BH);c.save();
   if(B.shake>0)c.translate((Math.random()-.5)*B.shake*36,(Math.random()-.5)*B.shake*36);
-  c.fillStyle=FG;c.globalAlpha=.16;c.fillRect(0,gy,BW,BH-gy);
-  c.globalAlpha=.12;c.beginPath();c.ellipse(g.x+Math.sin(B.a)*BH*.45,gy+5,w*.7,6,0,0,PI2);c.fill();   // sombra do saco
-  c.globalAlpha=1;c.fillRect(0,gy,BW,2);
+  // ringue: lona em perspectiva, postes nos cantos, 3 cordas e sombras no chão
+  const y0=gy-BH*.05,pl=BW*.07,pr=BW*.93,ph=BH*.38;
+  c.fillStyle='#1e3a8a';c.globalAlpha=.55;c.beginPath();c.moveTo(BW*.03,y0);c.lineTo(BW*.97,y0);c.lineTo(BW,BH);c.lineTo(0,BH);c.closePath();c.fill();
+  c.strokeStyle='#fff';c.lineWidth=1;c.globalAlpha=.14;
+  for(let i=1;i<4;i++){const f=i/4,y=y0+(BH-y0)*f*f;c.beginPath();c.moveTo(BW*.03*(1-f),y);c.lineTo(BW-BW*.03*(1-f),y);c.stroke()}
+  c.globalAlpha=.35;c.fillStyle='#fff';c.fillRect(BW*.03,y0-2,BW*.94,3);c.globalAlpha=1;
+  ['#ef4444','#f4f4f4','#3b82f6'].forEach((col,i)=>{const y=y0-ph*(.3+.28*i);c.strokeStyle=col;c.lineWidth=3;c.beginPath();c.moveTo(pl,y);c.lineTo(pr,y);c.stroke()});
+  [pl,pr].forEach(x=>{c.fillStyle='#52525b';c.fillRect(x-4,y0-ph,8,ph);c.fillStyle='#ef4444';c.fillRect(x-6,y0-ph,12,ph*.14)});
+  c.fillStyle='#000';c.globalAlpha=.25;c.beginPath();c.ellipse(bx,gy+3,s*.6,s*.12,0,0,PI2);c.fill();                       // sombra do lutador
+  c.globalAlpha=.2;c.beginPath();c.ellipse(g.x+Math.sin(B.a)*BH*.45,gy+6,w*.7,7,0,0,PI2);c.fill();c.globalAlpha=1;       // sombra do saco
   // lutador: o corpo acompanha o golpe
   const sk=SKINS[S.skin]||SKINS.default,ba=B.an[B.an.length-1],bp=ba?ba.t/MOVES[ba.k].d:0,ev=Math.sin(Math.PI*bp);
   c.save();c.translate(bx,gy);
@@ -676,25 +697,41 @@ function bdraw(){
   // saco: correntes em V, corpo com volume, costuras, marca do impacto
   const bg=bxEq('bag');
   c.save();c.translate(g.x,g.py);c.rotate(B.a);
-  c.strokeStyle=FG;c.lineWidth=2.5;c.beginPath();c.moveTo(0,0);c.lineTo(-w*.32,top);c.moveTo(0,0);c.lineTo(w*.32,top);c.stroke();
+  const chain=()=>{c.beginPath();c.moveTo(0,0);c.lineTo(-w*.32,top);c.moveTo(0,0);c.lineTo(w*.32,top);c.stroke()};
+  c.lineCap='butt';c.strokeStyle='#d4d4d8';c.lineWidth=5+2*B.sq;chain();                         // corrente mais grossa
+  c.strokeStyle='#52525b';c.lineWidth=2;c.setLineDash([3,4]);chain();c.setLineDash([]);         // elos
+  c.fillStyle='#71717a';c.fillRect(-12,-5,24,7);c.strokeStyle='#e4e4e7';c.lineWidth=3;c.beginPath();c.arc(0,2,6,0,PI2);c.stroke();   // argola no teto
+  [-w*.32,w*.32].forEach(x=>{c.beginPath();c.arc(x,top,3.5,0,PI2);c.stroke()});                 // argolas no saco
+  c.lineCap='round';
   c.translate(0,top+h/2);
   c.scale((1-.15*B.sq)*(B.spin>0?Math.cos((1-B.spin)*PI2*2):1)*(1-.2*B.tw*Math.abs(Math.sin(B.tw*10))),1+.05*B.sq);
   c.fillStyle=bg[2];rr(c,-w/2,-h/2,w,h,w*.28);c.fill();
   const gr=c.createLinearGradient(-w/2,0,w/2,0);gr.addColorStop(0,'rgba(255,255,255,.3)');gr.addColorStop(.5,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.35)');
   c.fillStyle=gr;rr(c,-w/2,-h/2,w,h,w*.28);c.fill();
-  c.fillStyle='rgba(0,0,0,.25)';c.fillRect(-w/2,-h/2+h*.07,w,h*.07);c.fillRect(-w/2,h/2-h*.14,w,h*.07);
+  // sombra interna (a luz vem da esquerda) e base mais escura
+  c.save();rr(c,-w/2,-h/2,w,h,w*.28);c.clip();
+  const sh=c.createLinearGradient(-w*.1,0,w/2,0);sh.addColorStop(0,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,0,0,'+(.4+.15*B.sq)+')');c.fillStyle=sh;c.fillRect(-w/2,-h/2,w,h);
+  const sv=c.createLinearGradient(0,h*.1,0,h/2);sv.addColorStop(0,'rgba(0,0,0,0)');sv.addColorStop(1,'rgba(0,0,0,.3)');c.fillStyle=sv;c.fillRect(-w/2,-h/2,w,h);
+  c.restore();
+  // amarração: faixas de couro com costura e fivela, no topo e na base
+  [-h/2+h*.04,h/2-h*.13].forEach(y=>{c.fillStyle='rgba(0,0,0,.5)';c.fillRect(-w/2,y,w,h*.09);
+    c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=1;c.setLineDash([3,3]);c.beginPath();c.moveTo(-w/2,y+h*.045);c.lineTo(w/2,y+h*.045);c.stroke();c.setLineDash([]);
+    c.fillStyle='#d4d4d8';c.fillRect(-w*.07,y+h*.01,w*.14,h*.07)});
   c.strokeStyle='rgba(0,0,0,.2)';c.lineWidth=1;[.3,.5,.7].forEach(f=>{c.beginPath();c.moveTo(-w/2,-h/2+h*f);c.lineTo(w/2,-h/2+h*f);c.stroke()});
   if(bg[4]==='s'){c.fillStyle='rgba(255,255,255,.35)';[.3,.5,.7].forEach(f=>c.fillRect(-w/2,-h/2+h*f,w,h*.05))}
   if(bg[4]==='*'){c.fillStyle='#fde68a';c.font=Math.round(w*.35)+'px system-ui';c.textAlign='center';c.fillText('★',0,-h*.2);c.fillText('★',-w*.2,h*.05);c.fillText('★',w*.2,h*.25)}
   if(bg[4]==='g'){c.fillStyle='rgba(255,255,255,.4)';c.fillRect(-w*.3,-h*.4,w*.1,h*.8)}
-  if(B.dent>0){c.fillStyle='rgba(0,0,0,'+(.3*B.dent)+')';c.beginPath();c.ellipse(-w/2+3,(B.hy-.5)*h,w*.2*B.dent,h*.1,0,0,PI2);c.fill()}
+  if(B.dent>0){c.fillStyle='rgba(0,0,0,'+(.3*B.dent)+')';c.beginPath();c.ellipse(-w/2+3,(B.hy-.5)*h,w*.28*B.dent,h*.13,0,0,PI2);c.fill();c.strokeStyle='rgba(255,255,255,'+(.25*B.dent)+')';c.lineWidth=1.5;c.stroke()}
   c.restore();
   B.fx.forEach(f=>{const p=f.t/f.l;c.globalAlpha=1-p;
-    if(f.k==='ring'){c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(f.x,f.y,8+p*s*.9,0,PI2);c.stroke()}
+    if(f.k==='flash'){c.fillStyle='#fff';c.beginPath();c.arc(f.x,f.y,s*.55*(1-p*.4),0,PI2);c.fill()}
+    else if(f.k==='ring'){c.strokeStyle='#fff';c.lineWidth=3;c.beginPath();c.arc(f.x,f.y,8+p*s*.9,0,PI2);c.stroke()}
     else if(f.k==='faiscas'){c.strokeStyle='#fde047';c.lineWidth=3;c.beginPath();c.moveTo(f.x,f.y);c.lineTo(f.x-f.vx*.05,f.y-f.vy*.05);c.stroke()}
     else if(f.k==='estrelas'){c.fillStyle='#fde047';c.font='20px system-ui';c.textAlign='center';c.fillText('★',f.x,f.y)}
     else{c.fillStyle=p<.5?'#f97316':'#ef4444';c.beginPath();c.arc(f.x,f.y,10*(1-p),0,PI2);c.fill()}});
-  B.pops.forEach(p=>{c.globalAlpha=Math.max(0,1-p.t/.9);c.textAlign='center';c.font='bold '+Math.round(s*(p.big?.34:.26))+'px system-ui';
+  B.pops.forEach(p=>{c.globalAlpha=Math.max(0,1-p.t/.9);c.textAlign='center';
+    if(p.dmg){c.font='900 '+Math.round(s*.4)+'px system-ui';c.lineWidth=4;c.strokeStyle='rgba(0,0,0,.7)';const yy=p.y-p.t*70,xx=p.x-s*.2;c.strokeText(p.txt,xx,yy);c.fillStyle='#fde047';c.fillText(p.txt,xx,yy);return}
+    c.font='bold '+Math.round(s*(p.big?.34:.26))+'px system-ui';
     c.fillStyle=p.big?'#ffb703':FG;c.fillText(p.txt,p.big?BW/2:g.x-g.w,p.big?BH*.1-p.t*20:g.y-p.t*40)});
   c.globalAlpha=1;c.restore();
 }
@@ -770,7 +807,10 @@ $('bgIn').oninput=e=>setBg(e.target.value);
 $('bgPick').onclick=()=>{if(S.own.picker)$('bgIn').click();else purchase('picker',PICKP,'a cor livre',()=>{renderSet();$('bgIn').click()})};
 cv=$('cv');ctx=cv.getContext('2d');
 bcv=$('bv');bctx=bcv.getContext('2d');
-document.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();punch(b.dataset.mv)}));
+document.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('pointerdown',e=>{
+  e.preventDefault();const t0=B.lastP;punch(b.dataset.mv);
+  if(B.lastP!==t0){b.classList.remove('cd');void b.offsetWidth;b.classList.add('cd');try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}}
+  b.classList.add('hit');setTimeout(()=>b.classList.remove('hit'),90)}));
 $('bbQuit').onclick=()=>{endBox(true);go('menu')};
 cv.addEventListener('pointerdown',e=>{e.preventDefault();tap()});
 document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();tap()}});
