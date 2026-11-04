@@ -262,7 +262,7 @@ const BX={time:60,gap:.2,base:[12,14,16,19,22,26],pcost:[1200,2500,4500,7500,120
   sp:[['nenhuma','Sem animação especial',0],['tremor','Tremor de tela',750],['giro','Saco giratório nos combos',1500]]};
 const BCAT={gl:'Luvas',bag:'Sacos de pancada',fx:'Efeitos dos golpes',sp:'Animações especiais'};
 // d = duração do golpe (s), ht = instante em que acerta o saco
-const MOVES={jab:{i:1.4,u:0,tw:0,d:.16,ht:.06},direto:{i:2.8,u:0,tw:0,d:.24,ht:.10},cruzado:{i:3.3,u:.1,tw:1,d:.30,ht:.13},gancho:{i:2.4,u:1.2,tw:0,d:.34,ht:.17}};
+const MOVES={jab:{i:1.4,u:0,tw:0,d:.16,ht:.06,hy:.6},direto:{i:2.8,u:0,tw:0,d:.24,ht:.10,hy:.65},cruzado:{i:3.3,u:.1,tw:1,d:.30,ht:.13,hy:.55},gancho:{i:2.4,u:1.2,tw:0,d:.34,ht:.17,hy:.85}};
 // combos: sequência de golpes (até 0,9 s entre eles) + moedas de bônus. Para criar outro, adicione uma linha.
 const COMBOS=[
   {n:'1-2-3',s:['jab','direto','cruzado'],b:10},{n:'1-1-2',s:['jab','jab','direto'],b:8},
@@ -598,7 +598,7 @@ const bxOwn=(c,it)=>bxPrice(c,it)===0||!!S.bxOwn[c+':'+it[0]];
 const bxEq=c=>BX[c].find(x=>x[0]===S.bxEq[c])||BX[c][0];
 const bxCoins=()=>BX.base[S.bxPow];
 function bres(){const r=bcv.getBoundingClientRect(),d=Math.min(window.devicePixelRatio||1,2);BW=r.width||300;BH=r.height||400;bcv.width=Math.round(BW*d);bcv.height=Math.round(BH*d);bctx.setTransform(d,0,0,d,0,0)}
-function bgeo(){return{x:BW*.66,py:BH*.04,y:BH*.17,w:BH*.11,h:BH*.34}}
+function bgeo(){const s=Math.min(BW,BH)*.16,gy=BH*.84;return{x:BW*.3+s*2.15,py:BH*.06,y:gy-s*1.9,w:s*.8,h:s*1.7}}   // base do saco a ~0,2 lutador do chão
 function bhud(){$('bt').textContent='⏱ '+Math.max(0,Math.ceil(B.t));$('bn').textContent=B.n;$('bc').textContent='🪙 '+S.coins;
   $('bhint').textContent=(performance.now()-B.lastP<900?B.hist:[]).map(k=>({jab:'Jab',direto:'Direto',cruzado:'Cruzado',gancho:'Gancho'})[k]).join(' → ')}
 function startBox(){
@@ -626,8 +626,9 @@ function punch(k){
   bhud();
 }
 function impact(k){
-  const m=MOVES[k],g=bgeo(),e=S.bxEq.fx,hy=k==='gancho'?.8:.45,x=g.x-g.w/2,y=g.y+g.h*hy;
-  B.w+=m.i;B.vy-=m.u*170;B.sq=1;B.dent=1;B.hy=hy;if(m.tw)B.tw=1;sfx.punch(k);
+  const m=MOVES[k],g=bgeo(),e=S.bxEq.fx,hy=m.hy,x=g.x-g.w/2,y=g.y+g.h*hy;
+  B.w-=m.i*.26;B.vy-=m.u*110;      // o saco é empurrado para longe do lutador (ângulo negativo = base vai para a direita)
+  B.sq=1;B.dent=1;B.hy=hy;if(m.tw)B.tw=1;sfx.punch(k);
   B.shake=Math.max(B.shake,S.bxEq.sp==='tremor'?.25:.08);          // tremor leve em todo impacto; forte com a animação comprada
   B.fx.push({k:'ring',x,y,t:0,l:.3,vx:0,vy:0});
   B.fx.push({k:'flash',x,y,t:0,l:.12,vx:0,vy:0});
@@ -639,8 +640,8 @@ function bupdate(dt){
   B.pops.forEach(p=>p.t+=dt);B.pops=B.pops.filter(p=>p.t<.9).slice(-8);
   B.fx.forEach(f=>{f.t+=dt;f.x+=f.vx*dt;f.y+=f.vy*dt});B.fx=B.fx.filter(f=>f.t<f.l);
   B.an.forEach(a=>{a.t+=dt;if(!a.hit&&a.t>=MOVES[a.k].ht){a.hit=true;impact(a.k)}});B.an=B.an.filter(a=>a.t<MOVES[a.k].d);
-  B.w+=(-30*Math.sin(B.a)-2.2*B.w)*dt;B.w=Math.max(-7,Math.min(7,B.w));B.a+=B.w*dt;   // saco como pêndulo
-  if(Math.abs(B.a)>1.1){B.a=Math.sign(B.a)*1.1;B.w*=-.3}        // limite de balanço
+  B.w+=(-18*Math.sin(B.a)-1.8*B.w)*dt;B.w=Math.max(-3,Math.min(3,B.w));B.a+=B.w*dt;   // saco como pêndulo
+  if(Math.abs(B.a)>.5){B.a=Math.sign(B.a)*.5;B.w*=-.3}        // limite de balanço
   B.vy+=(-90*B.y-7*B.vy)*dt;B.y+=B.vy*dt;                     // sobe e desce no gancho
   B.sq=Math.max(0,B.sq-dt*6);B.dent=Math.max(0,B.dent-dt*4);B.tw=Math.max(0,B.tw-dt*2.2);
   B.spin=Math.max(0,B.spin-dt*1.4);B.shake=Math.max(0,B.shake-dt);
@@ -648,6 +649,22 @@ function bupdate(dt){
 }
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
 // posição da luva em cada golpe (p = 0..1 do golpe). b = dobra do cotovelo (+ para baixo, - para cima)
+// extensão do braço: 0 = guarda, 1 = esticado; valores negativos = puxa para trás antes de soltar o golpe
+function ext(p,w,hp){
+  if(p<w)return -.16*(p/w);
+  if(p<hp){const q=(p-w)/(hp-w);return -.16+1.16*(1-Math.pow(1-q,3))}           // sai rápido e desacelera
+  const q=Math.min(1,(p-hp)/(1-hp)),r=Math.max(0,(q-.12)/.88);return 1-r*r*(3-2*r);  // segura um instante e recolhe
+}
+// movimento do corpo em cada golpe (peso para a frente, giro do tronco, agachar)
+function bodyT(k,p,s){
+  const e=Math.sin(Math.PI*Math.min(1,p*1.15)),r={dx:0,dy:0,rot:0,sx:1,sy:1};
+  if(k==='jab'){r.dx=.1*s*e;r.rot=.04*e}
+  else if(k==='direto'){r.dx=.2*s*e;r.rot=.16*e}
+  else if(k==='cruzado'){r.dx=.12*s*e;r.rot=-.09*e;r.sx=1-.12*e}
+  else{r.sy=1-.16*Math.sin(Math.PI*Math.min(1,p*2));r.dy=-.1*s*Math.sin(Math.PI*Math.max(0,Math.min(1,(p-.2)/.4)))}
+  return r;
+}
+// posição da luva em cada golpe (p = 0..1). b = dobra do cotovelo (+ para baixo, - para cima)
 function glovePos(k,p,rx,ry,tx,ty,s){
   if(k==='gancho'){                              // abaixa, sobe por baixo do saco e volta
     const dx=rx+s*.5,dy=ry+s*1;
@@ -655,10 +672,10 @@ function glovePos(k,p,rx,ry,tx,ty,s){
     if(p<.5){const e=(p-.28)/.22;return{x:dx+(tx-dx)*e,y:dy+(ty-dy)*e,b:1-.6*e}}
     const e=(p-.5)/.5;return{x:tx+(rx-tx)*e,y:ty+(ry-ty)*e,b:.4+.6*e}
   }
-  const f=MOVES[k].ht/MOVES[k].d,e0=p<f?p/f:1-(p-f)/(1-f),e=e0*e0*(3-2*e0);
-  const x=rx+(tx-rx)*e,y=ry+(ty-ry)*e,a=Math.sin(Math.PI*e);
-  if(k==='cruzado')return{x:x-a*s*.3,y:y-a*s*.9,b:-1};   // arco largo, cotovelo erguido
-  return{x,y,b:.15}                                        // jab e direto: braço reto
+  const m=MOVES[k],e=ext(p,k==='jab'?.1:k==='direto'?.2:.24,m.ht/m.d),a=Math.sin(Math.PI*Math.max(0,Math.min(1,e)));
+  const x=rx+(tx-rx)*e,y=ry+(ty-ry)*e;
+  if(k==='cruzado')return{x:x-a*s*.3,y:y-a*s*.85,b:-1};   // arco largo, cotovelo erguido
+  return{x,y,b:e<0?.9:Math.max(.12,1-.85*Math.min(1,e))}   // jab e direto: cotovelo dobrado na guarda, braço reto no impacto
 }
 function arm(c,sx,sy,gx,gy,b,L){
   const dx=gx-sx,dy=gy-sy,d=Math.hypot(dx,dy)||1,hh=Math.sqrt(Math.max(0,L*L-d*d/4));
@@ -666,7 +683,7 @@ function arm(c,sx,sy,gx,gy,b,L){
   c.beginPath();c.moveTo(sx,sy);c.lineTo(ex,ey);c.lineTo(gx,gy);c.stroke();
 }
 function bdraw(){
-  const c=bctx,g=bgeo(),s=Math.min(BW,BH)*.16,gy=BH*.84,bx=BW*.24,w=g.w,h=g.h,top=g.y-g.py+B.y;
+  const c=bctx,g=bgeo(),s=Math.min(BW,BH)*.16,gy=BH*.84,bx=BW*.3,w=g.w,h=g.h,top=g.y-g.py+B.y;
   c.clearRect(0,0,BW,BH);c.save();
   if(B.shake>0)c.translate((Math.random()-.5)*B.shake*36,(Math.random()-.5)*B.shake*36);
   // ringue: lona em perspectiva, postes nos cantos, 3 cordas e sombras no chão
@@ -678,23 +695,27 @@ function bdraw(){
   ['#ef4444','#f4f4f4','#3b82f6'].forEach((col,i)=>{const y=y0-ph*(.3+.28*i);c.strokeStyle=col;c.lineWidth=3;c.beginPath();c.moveTo(pl,y);c.lineTo(pr,y);c.stroke()});
   [pl,pr].forEach(x=>{c.fillStyle='#52525b';c.fillRect(x-4,y0-ph,8,ph);c.fillStyle='#ef4444';c.fillRect(x-6,y0-ph,12,ph*.14)});
   c.fillStyle='#000';c.globalAlpha=.25;c.beginPath();c.ellipse(bx,gy+3,s*.6,s*.12,0,0,PI2);c.fill();                       // sombra do lutador
-  c.globalAlpha=.2;c.beginPath();c.ellipse(g.x+Math.sin(B.a)*BH*.45,gy+6,w*.7,7,0,0,PI2);c.fill();c.globalAlpha=1;       // sombra do saco
-  // lutador: o corpo acompanha o golpe
-  const sk=SKINS[S.skin]||SKINS.default,ba=B.an[B.an.length-1],bp=ba?ba.t/MOVES[ba.k].d:0,ev=Math.sin(Math.PI*bp);
-  c.save();c.translate(bx,gy);
-  if(ba){if(ba.k==='direto')c.rotate(.16*ev);else if(ba.k==='jab')c.rotate(.05*ev);
-    else if(ba.k==='cruzado'){c.rotate(-.1*ev);c.scale(1-.12*ev,1)}else c.scale(1,1-.16*Math.sin(Math.PI*Math.min(1,bp*2)))}
+  c.globalAlpha=.2;c.beginPath();c.ellipse(g.x-Math.sin(B.a)*(top+h),gy+6,w*.7,7,0,0,PI2);c.fill();c.globalAlpha=1;       // sombra do saco
+  // lutador: o corpo acompanha o golpe e as mãos saem da guarda
+  const sk=SKINS[S.skin]||SKINS.default,ba=B.an[B.an.length-1],bp=ba?ba.t/MOVES[ba.k].d:0;
+  const T=ba?bodyT(ba.k,bp,s):{dx:0,dy:Math.sin(performance.now()/180)*s*.02,rot:0,sx:1,sy:1};
+  c.save();c.translate(bx+T.dx,gy+T.dy);c.rotate(T.rot);c.scale(T.sx,T.sy);
   (sk.draw||SKINS.default.draw)(c,0,0,s,sk);c.restore();
-  const gl=bxEq('gl')[2];
-  for(let hd=0;hd<2;hd++){
-    const sx=bx+s*.4,sy=gy-s*(.72-.12*hd),rx=sx+s*.45,ry=sy+s*.1,a=B.an.filter(q=>(q.k==='jab'||q.k==='cruzado'?0:1)===hd).pop();
-    let gp={x:rx,y:ry,b:.15};
-    if(a){const tx=g.x-w/2-s*.25,ty=g.y+h*(a.k==='gancho'?.8:.45);gp=glovePos(a.k,a.t/MOVES[a.k].d,rx,ry,tx,ty,s)}
-    c.strokeStyle=sk.color;c.lineWidth=s*.16;c.lineCap='round';c.lineJoin='round';arm(c,sx,sy,gp.x,gp.y,gp.b,s*.65);
+  const gl=bxEq('gl')[2],cs=Math.cos(T.rot),sn=Math.sin(T.rot);
+  const W2=(lx,ly)=>({x:bx+T.dx+lx*T.sx*cs-ly*T.sy*sn,y:gy+T.dy+lx*T.sx*sn+ly*T.sy*cs});
+  for(let hd=1;hd>=0;hd--){                      // mão de trás primeiro, a da frente fica por cima
+    const sh=W2(s*(hd?.2:.38),-s*(hd?.62:.72)),rx=sh.x+s*(hd?.4:.48),ry=sh.y-s*(hd?.14:.1);
+    const a=B.an.filter(q=>(q.k==='jab'||q.k==='cruzado'?0:1)===hd).pop();
+    let gp={x:rx,y:ry,b:.9};
+    if(a){const pp=a.t/MOVES[a.k].d,tx=g.x-w/2-s*.28,ty=g.y+h*MOVES[a.k].hy;
+      for(let j=3;j>=1;j--){const pg=pp-j*.04;if(pg>0){const q=glovePos(a.k,pg,rx,ry,tx,ty,s);c.globalAlpha=.1*(4-j);c.fillStyle=gl;c.beginPath();c.arc(q.x,q.y,s*.28,0,PI2);c.fill()}}   // rastro de velocidade
+      c.globalAlpha=1;gp=glovePos(a.k,pp,rx,ry,tx,ty,s)}
+    c.strokeStyle=sk.color;c.lineWidth=s*.16;c.lineCap='round';c.lineJoin='round';arm(c,sh.x,sh.y,gp.x,gp.y,gp.b,s*.65);
     c.fillStyle=gl;c.beginPath();c.arc(gp.x,gp.y,s*.3,0,PI2);c.fill();c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=2;c.stroke();
     c.fillStyle='rgba(255,255,255,.3)';c.beginPath();c.arc(gp.x-s*.08,gp.y-s*.1,s*.09,0,PI2);c.fill();
   }
-  // saco: correntes em V, corpo com volume, costuras, marca do impacto
+  // viga do teto e saco: correntes em V, corpo com volume, costuras, marca do impacto
+  c.fillStyle='#3f3f46';c.globalAlpha=.9;c.fillRect(0,0,BW,g.py*.8);c.globalAlpha=1;
   const bg=bxEq('bag');
   c.save();c.translate(g.x,g.py);c.rotate(B.a);
   const chain=()=>{c.beginPath();c.moveTo(0,0);c.lineTo(-w*.32,top);c.moveTo(0,0);c.lineTo(w*.32,top);c.stroke()};
